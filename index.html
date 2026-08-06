@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Prop Trading</title>
+  <style>
+    :root {
+      --bg-color: #0b0e14;
+      --card-bg: #121721;
+      --primary-blue: #0076ff;
+      --danger-red: #dc2626;
+      --danger-red-hover: #b91c1c;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --pill-border: #232d3f;
+      --input-bg: #1a2232;
+      --input-border: #2a364f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(0, 118, 255, 0.25) 0%, rgba(11, 14, 20, 0) 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1200px;
+      padding: 1.5rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-icon {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #0076ff, #00d2ff);
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .menu-btn span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background-color: white;
+      border-radius: 2px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 900px;
+      padding: 2rem 1.5rem 6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      line-height: 1.15;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.125rem;
+      line-height: 1.5;
+      max-width: 580px;
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.875rem 1.25rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.2s ease;
+      background-color: var(--primary-blue);
+      color: white;
+      border: 1px solid var(--primary-blue);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #0062d6;
+      border-color: #0062d6;
+    }
+
+    .form-panel {
+      display: none;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 2rem;
+      background-color: var(--card-bg);
+      border: 1px solid var(--pill-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .panel-title {
+      text-align: left;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+
+    .trade-form-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-place {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .grid-manage {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .form-group input, 
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus, 
+    .form-group select:focus {
+      border-color: var(--primary-blue);
+    }
+
+    .manage-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn-proceed {
+      flex: 1;
+    }
+
+    .btn-danger {
+      flex: 1;
+      background-color: var(--danger-red);
+      border-color: var(--danger-red);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-red-hover);
+      border-color: var(--danger-red-hover);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-widget {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 56px;
+      height: 56px;
+      background-color: var(--primary-blue);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 118, 255, 0.4);
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .chat-widget svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    /* Custom Toast Notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+      font-weight: 600;
+      font-size: 0.95rem;
+      z-index: 9999;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .toast-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+    }
+
+    .toast-message {
+      flex: 1;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .toast-close:hover {
+      color: white;
+    }
+
+    .toast-close svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    @media (max-width: 768px) {
+      .grid-place {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .toast {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        padding: 14px 18px;
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 2.1rem;
+      }
+      .cta-group {
+        flex-direction: row;
+      }
+      .grid-place, .grid-manage {
+        grid-template-columns: 1fr;
+      }
+      .manage-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon"></span>
+    </div>
+    <button class="menu-btn" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </header>
+
+  <main>
+    <h1>Grow &amp; Monetize<br>Your Account</h1>
+
+    <p class="subtitle">
+      Trade faster with our low-latency hosted server—engineered for up to 99.99% uptime and reliable execution.
+    </p>
+
+    <div class="cta-group">
+      <button class="btn" id="placeTradesBtn">Place Trades</button>
+      <button class="btn" id="manageTradesBtn">Manage Trades</button>
+    </div>
+
+    <!-- Panel 1: Place Trades -->
+    <div class="form-panel" id="placeFormPanel">
+      <div class="panel-title">Place New Order</div>
+      <form id="placeOrderForm">
+        <div class="trade-form-grid grid-place">
+          <div class="form-group">
+            <label for="lotSize">Lot Size</label>
+            <input type="number" id="lotSize" step="0.01" min="0.01" placeholder="0.10" required>
+          </div>
+
+          <div class="form-group">
+            <label for="orderType">Type</label>
+            <select id="orderType" required>
+              <option value="BUY">Buy</option>
+              <option value="SELL">Sell</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="numTrades">Number of Trades</label>
+            <input type="number" id="numTrades" min="1" max="100" placeholder="1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="pair">Pair</label>
+            <select id="pair" required>
+              <option value="" disabled selected>Select Pair</option>
+              <option value="XAUUSD">XAUUSD (Gold)</option>
+              <option value="EURUSD">EURUSD</option>
+              <option value="GBPUSD">GBPUSD</option>
+              <option value="USDJPY">USDJPY</option>
+              <option value="BTCUSD">BTCUSD</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-proceed">Proceed</button>
+      </form>
+    </div>
+
+    <!-- Panel 2: Manage Trades (Stop Loss & Take Profit) -->
+    <div class="form-panel" id="manageFormPanel">
+      <div class="panel-title">Manage Open Positions</div>
+      <form id="manageOrderForm">
+        <div class="trade-form-grid grid-manage">
+          <div class="form-group">
+            <label for="stopLoss">Stop Loss (SL)</label>
+            <input type="number" id="stopLoss" step="0.0001" placeholder="Price / Pips" required>
+          </div>
+          <div class="form-group">
+            <label for="takeProfit">Take Profit (TP)</label>
+            <input type="number" id="takeProfit" step="0.0001" placeholder="Price / Pips" required>
+          </div>
+        </div>
+        <div class="manage-actions">
+          <button type="submit" class="btn btn-proceed">Update Order</button>
+          <button type="button" class="btn btn-danger" id="closeAllBtn">Close All Trades</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <div class="chat-widget" role="button" aria-label="Open chat">
+    <svg viewBox="0 0 24 24">
+      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+    </svg>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+      </svg>
+    </span>
+    <span class="toast-message" id="toastMessage">Trades Successfully Updated</span>
+    <button class="toast-close" id="toastClose">
+      <svg viewBox="0 0 24 24">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    const FIREBASE_DB_URL = "https://altibex-19bc2-default-rtdb.firebaseio.com/";
+
+    const placeTradesBtn = document.getElementById('placeTradesBtn');
+    const manageTradesBtn = document.getElementById('manageTradesBtn');
+    const placeFormPanel = document.getElementById('placeFormPanel');
+    const manageFormPanel = document.getElementById('manageFormPanel');
+    const closeAllBtn = document.getElementById('closeAllBtn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastClose = document.getElementById('toastClose');
+
+    // Toast functions
+    function showToast(message) {
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      // Auto-hide after 3 seconds
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function hideToast() {
+      toast.classList.remove('show');
+      clearTimeout(toast._timeout);
+    }
+
+    toastClose.addEventListener('click', hideToast);
+
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (toast.classList.contains('show') && !toast.contains(e.target)) {
+        hideToast();
+      }
+    });
+
+    // Panel Toggle
+    placeTradesBtn.addEventListener('click', () => {
+      manageFormPanel.style.display = 'none';
+      placeFormPanel.style.display = placeFormPanel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    manageTradesBtn.addEventListener('click', () => {
+      placeFormPanel.style.display = 'none';
+      manageFormPanel.style.display = manageFormPanel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // 1. Fetch current inputs state on load to populate form inputs
+    async function loadInputsState() {
+      try {
+        const response = await fetch(`${FIREBASE_DB_URL}inputsState.json`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data) {
+            if (data.lotSize) document.getElementById('lotSize').value = data.lotSize;
+            if (data.orderType) document.getElementById('orderType').value = data.orderType;
+            if (data.numTrades) document.getElementById('numTrades').value = data.numTrades;
+            if (data.pair) document.getElementById('pair').value = data.pair;
+            if (data.stopLoss) document.getElementById('stopLoss').value = data.stopLoss;
+            if (data.takeProfit) document.getElementById('takeProfit').value = data.takeProfit;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading inputsState:", error);
+      }
+    }
+
+    // 2. On "Proceed" - ALWAYS send data to Firebase even if same values
+    document.getElementById('placeOrderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const placeParams = {
+        lotSize: document.getElementById('lotSize').value,
+        orderType: document.getElementById('orderType').value,
+        numTrades: document.getElementById('numTrades').value,
+        pair: document.getElementById('pair').value,
+        timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
+      };
+
+      try {
+        // First, update the inputsState
+        await fetch(`${FIREBASE_DB_URL}inputsState.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(placeParams)
+        });
+
+        // Then, send a command to trigger the bot
+        await fetch(`${FIREBASE_DB_URL}commands.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'PLACE_TRADES', 
+            params: placeParams,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        showToast(`✅ ${placeParams.numTrades} Trade(s) sent successfully!`);
+      } catch (error) {
+        console.error('Failed to update inputsState:', error);
+        showToast('❌ Failed to send trades');
+      }
+    });
+
+    // 3. On "Update Order" - ALWAYS send data to Firebase even if same values
+    document.getElementById('manageOrderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const manageParams = {
+        stopLoss: document.getElementById('stopLoss').value,
+        takeProfit: document.getElementById('takeProfit').value,
+        timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
+      };
+
+      try {
+        // First, update the inputsState
+        await fetch(`${FIREBASE_DB_URL}inputsState.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(manageParams)
+        });
+
+        // Then, send a command to trigger the bot
+        await fetch(`${FIREBASE_DB_URL}commands.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'UPDATE_ORDERS', 
+            params: manageParams,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        showToast('✅ Stop Loss & Take Profit Updated!');
+      } catch (error) {
+        console.error('Failed to update inputsState:', error);
+        showToast('❌ Failed to update orders');
+      }
+    });
+
+    // 4. Close All Trades Button - Immediate action, no confirmation
+    closeAllBtn.addEventListener('click', async () => {
+      try {
+        await fetch(`${FIREBASE_DB_URL}commands.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'CLOSE_ALL_TRADES', 
+            timestamp: new Date().toISOString() 
+          })
+        });
+        showToast('✅ All trades closed successfully!');
+      } catch (error) {
+        console.error('Failed to send close all trades command:', error);
+        showToast('❌ Failed to close trades');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadInputsState);
+  </script>
+
+</body>
+</html>
