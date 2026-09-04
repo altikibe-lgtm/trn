@@ -1,632 +1,779 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modern Prop Trading</title>
-  <style>
-    :root {
-      --bg-color: #0b0e14;
-      --card-bg: #121721;
-      --primary-blue: #0076ff;
-      --danger-red: #dc2626;
-      --danger-red-hover: #b91c1c;
-      --text-main: #ffffff;
-      --text-muted: #94a3b8;
-      --pill-border: #232d3f;
-      --input-bg: #1a2232;
-      --input-border: #2a364f;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldlineMarkets · Sign in</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+        body {
+            background-color: #070b19;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      overflow-x: hidden;
-    }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 15% 30%, rgba(20, 40, 90, 0.4) 0%, transparent 40%),
+                        radial-gradient(circle at 85% 70%, rgba(10, 20, 50, 0.8) 0%, transparent 50%);
+            z-index: -1;
+        }
 
-    .glow {
-      position: absolute;
-      top: -100px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(0, 118, 255, 0.25) 0%, rgba(11, 14, 20, 0) 70%);
-      z-index: 0;
-      pointer-events: none;
-    }
+        header {
+            width: 100%;
+            padding: 25px 50px;
+            display: flex;
+            justify-content: center;
+        }
 
-    header {
-      width: 100%;
-      max-width: 1200px;
-      padding: 1.5rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: relative;
-      z-index: 10;
-    }
+        .logo {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            cursor: pointer;
+        }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+        .logo span {
+            color: #f6b83b; /* gold accent */
+        }
 
-    .logo-icon {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, #0076ff, #00d2ff);
-      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    }
+        .main-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 20px 50px 60px 50px;
+            width: 100%;
+            gap: 60px;
+        }
 
-    .menu-btn {
-      background: none;
-      border: none;
-      color: white;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
+        .left-content {
+            flex: 1;
+            max-width: 580px;
+            padding-top: 20px;
+        }
 
-    .menu-btn span {
-      display: block;
-      width: 24px;
-      height: 2px;
-      background-color: white;
-      border-radius: 2px;
-    }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #f6b83b;
+            margin-bottom: 24px;
+        }
 
-    main {
-      width: 100%;
-      max-width: 900px;
-      padding: 2rem 1.5rem 6rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #34d399;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #34d399;
+        }
 
-    h1 {
-      font-size: 2.75rem;
-      line-height: 1.15;
-      font-weight: 800;
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.02em;
-    }
+        .left-content h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 24px;
+        }
 
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 1.125rem;
-      line-height: 1.5;
-      max-width: 580px;
-      margin-bottom: 2.5rem;
-    }
+        .left-content h1 .gradient-text {
+            background: linear-gradient(135deg, #ffffff 40%, #f6b83b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    .cta-group {
-      display: flex;
-      gap: 1rem;
-      width: 100%;
-      max-width: 400px;
-    }
+        .left-content p.subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 35px;
+            max-width: 460px;
+        }
 
-    .btn {
-      flex: 1;
-      padding: 0.875rem 1.25rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      text-align: center;
-      transition: all 0.2s ease;
-      background-color: var(--primary-blue);
-      color: white;
-      border: 1px solid var(--primary-blue);
-      cursor: pointer;
-    }
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-    .btn:hover {
-      background-color: #0062d6;
-      border-color: #0062d6;
-    }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            font-weight: 400;
+        }
 
-    .form-panel {
-      display: none;
-      width: 100%;
-      max-width: 800px;
-      margin-top: 2rem;
-      background-color: var(--card-bg);
-      border: 1px solid var(--pill-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      animation: fadeIn 0.3s ease-in-out;
-    }
+        .feature-item i {
+            color: #34d399;
+            font-size: 0.85rem;
+        }
 
-    .panel-title {
-      text-align: left;
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: var(--text-main);
-    }
+        .chat-widget {
+            position: fixed;
+            left: 30px;
+            bottom: 30px;
+            width: 50px;
+            height: 50px;
+            background-color: #059669;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
 
-    .trade-form-grid {
-      display: grid;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
+        .chat-widget:hover {
+            transform: scale(1.05);
+        }
 
-    .grid-place {
-      grid-template-columns: repeat(4, 1fr);
-    }
+        .auth-card {
+            background-color: #0b132b;
+            border: 1px solid #1e293b;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
 
-    .grid-manage {
-      grid-template-columns: repeat(2, 1fr);
-    }
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      text-align: left;
-    }
+        .card-top-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #f6b83b;
+            margin-bottom: 8px;
+        }
 
-    .form-group label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-    }
+        .shield-icon {
+            color: #f6b83b;
+            background: rgba(246, 184, 59, 0.1);
+            border: 1px solid rgba(246, 184, 59, 0.2);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
 
-    .form-group input, 
-    .form-group select {
-      width: 100%;
-      padding: 0.75rem;
-      background-color: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 6px;
-      color: var(--text-main);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+        .auth-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
 
-    .form-group input:focus, 
-    .form-group select:focus {
-      border-color: var(--primary-blue);
-    }
+        .card-desc {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 28px;
+        }
 
-    .manage-actions {
-      display: flex;
-      gap: 1rem;
-    }
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-    .btn-proceed {
-      flex: 1;
-    }
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
 
-    .btn-danger {
-      flex: 1;
-      background-color: var(--danger-red);
-      border-color: var(--danger-red);
-    }
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
 
-    .btn-danger:hover {
-      background-color: var(--danger-red-hover);
-      border-color: var(--danger-red-hover);
-    }
+        .input-wrapper i.left-icon {
+            position: absolute;
+            left: 14px;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        .form-control {
+            width: 100%;
+            background-color: #070b19;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            padding: 12px 14px 12px 42px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
 
-    .chat-widget {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      width: 56px;
-      height: 56px;
-      background-color: var(--primary-blue);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 14px rgba(0, 118, 255, 0.4);
-      cursor: pointer;
-      z-index: 100;
-    }
+        .form-control::placeholder {
+            color: #475569;
+        }
 
-    .chat-widget svg {
-      width: 24px;
-      height: 24px;
-      fill: white;
-    }
+        .form-control:focus {
+            border-color: #f6b83b;
+        }
 
-    /* Custom Toast Notification */
-    .toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #10b981;
-      color: white;
-      padding: 16px 24px;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
-      font-weight: 600;
-      font-size: 0.95rem;
-      z-index: 9999;
-      transform: translateX(120%);
-      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+        .phone-group {
+            display: flex;
+            background-color: #070b19;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+        }
 
-    .toast.show {
-      transform: translateX(0);
-    }
+        .phone-group:focus-within {
+            border-color: #f6b83b;
+        }
 
-    .toast-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+        .country-select {
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0 10px;
+            border-right: 1px solid #1e293b;
+            outline: none;
+            cursor: pointer;
+        }
 
-    .toast-icon svg {
-      width: 16px;
-      height: 16px;
-      fill: white;
-    }
+        .country-select option {
+            background-color: #0b132b;
+            color: #ffffff;
+        }
 
-    .toast-message {
-      flex: 1;
-    }
+        .phone-group .form-control {
+            border: none;
+            background: transparent;
+            padding-left: 12px;
+        }
 
-    .toast-close {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.7);
-      cursor: pointer;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.2s;
-    }
+        .phone-helper, .input-hint {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 6px;
+        }
 
-    .toast-close:hover {
-      color: white;
-    }
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.85rem;
+            background: none;
+            border: none;
+        }
 
-    .toast-close svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-    }
+        .forgot-password-link {
+            display: block;
+            text-align: right;
+            font-size: 0.75rem;
+            color: #f6b83b;
+            text-decoration: none;
+            margin-top: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
 
-    @media (max-width: 768px) {
-      .grid-place {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .toast {
-        top: 12px;
-        right: 12px;
-        left: 12px;
-        padding: 14px 18px;
-        font-size: 0.9rem;
-      }
-    }
+        .forgot-password-link:hover {
+            color: #facc70;
+            text-decoration: underline;
+        }
 
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 2.1rem;
-      }
-      .cta-group {
-        flex-direction: row;
-      }
-      .grid-place, .grid-manage {
-        grid-template-columns: 1fr;
-      }
-      .manage-actions {
-        flex-direction: column;
-      }
-    }
-  </style>
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #f6b83b 0%, #e09d2b 100%);
+            color: #070b19;
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+
+        .card-footer-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 20px;
+        }
+
+        .card-footer-text a {
+            color: #ffffff;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .card-footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-message {
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 12px;
+            min-height: 18px;
+        }
+
+        .auth-message.error {
+            color: #ef4444;
+        }
+
+        .auth-message.success {
+            color: #22c55e;
+        }
+
+        .global-footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #64748b;
+            padding-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media(max-width: 968px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+                padding: 20px 20px;
+            }
+            .left-content {
+                display: none;
+            }
+            .auth-card {
+                max-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <div class="glow"></div>
-
-  <header>
-    <div class="logo">
-      <span class="logo-icon"></span>
-    </div>
-    <button class="menu-btn" aria-label="Toggle menu">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-  </header>
-
-  <main>
-    <h1>Grow &amp; Monetize<br>Your Account</h1>
-
-    <p class="subtitle">
-      Trade faster with our low-latency hosted server—engineered for up to 99.99% uptime and reliable execution.
-    </p>
-
-    <div class="cta-group">
-      <button class="btn" id="placeTradesBtn">Place Trades</button>
-      <button class="btn" id="manageTradesBtn">Manage Trades</button>
+    <div class="chat-widget">
+        <i class="fa-solid fa-comment-dots"></i>
     </div>
 
-    <!-- Panel 1: Place Trades -->
-    <div class="form-panel" id="placeFormPanel">
-      <div class="panel-title">Place New Order</div>
-      <form id="placeOrderForm">
-        <div class="trade-form-grid grid-place">
-          <div class="form-group">
-            <label for="lotSize">Lot Size</label>
-            <input type="number" id="lotSize" step="0.01" min="0.01" placeholder="0.10" required>
-          </div>
+    <header>
+        <div class="logo">Goldline<span>Markets</span></div>
+    </header>
 
-          <div class="form-group">
-            <label for="orderType">Type</label>
-            <select id="orderType" required>
-              <option value="BUY">Buy</option>
-              <option value="SELL">Sell</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="numTrades">Number of Trades</label>
-            <input type="number" id="numTrades" min="1" max="100" placeholder="1" required>
-          </div>
-
-          <div class="form-group">
-            <label for="pair">Pair</label>
-            <select id="pair" required>
-              <option value="" disabled selected>Select Pair</option>
-              <option value="XAUUSD">XAUUSD (Gold)</option>
-              <option value="EURUSD">EURUSD</option>
-              <option value="GBPUSD">GBPUSD</option>
-              <option value="USDJPY">USDJPY</option>
-              <option value="BTCUSD">BTCUSD</option>
-            </select>
-          </div>
+    <div class="main-container">
+        
+        <!-- Left Banner Details -->
+        <div class="left-content">
+            <div class="badge">
+                <div class="badge-dot"></div> Secure Market Access
+            </div>
+            <h1>Trade with <span class="gradient-text">clarity.</span><br>Move with <span class="gradient-text">confidence.</span></h1>
+            <p class="subtitle">A focused trading workspace built for fast decisions, transparent balances, and disciplined execution.</p>
+            
+            <div class="features-list">
+                <div class="feature-item">
+                    <i class="fa-solid fa-check"></i> Protected customer session
+                </div>
+                <div class="feature-item">
+                    <i class="fa-solid fa-check"></i> Live account controls
+                </div>
+                <div class="feature-item">
+                    <i class="fa-solid fa-check"></i> One workspace, every move
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-proceed">Proceed</button>
-      </form>
+
+        <!-- Right Side Dynamic Auth Card -->
+        <div class="auth-card">
+
+            <!-- REGISTRATION VIEW (hidden by default) -->
+            <div id="register-view" class="hidden">
+                <div class="card-header-flex">
+                    <div>
+                        <div class="card-top-title">Create Your Account</div>
+                        <h2>Start your journey</h2>
+                    </div>
+                    <div class="shield-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+                <p class="card-desc">Set up your secure customer profile in under a minute.</p>
+
+                <form id="register-form">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-user left-icon"></i>
+                            <input type="text" id="reg-username" class="form-control" placeholder="your_username" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email address</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope left-icon"></i>
+                            <input type="email" id="reg-email" class="form-control" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone number</label>
+                        <div class="phone-group">
+                            <select class="country-select" id="countryCodeSelect">
+                                <option value="+254">KE +254</option>
+                                <option value="+1">US +1</option>
+                                <option value="+44">GB +44</option>
+                                <option value="+27">ZA +27</option>
+                                <option value="+234">NG +234</option>
+                                <option value="+256">UG +256</option>
+                                <option value="+255">TZ +255</option>
+                                <option value="+91">IN +91</option>
+                                <option value="+61">AU +61</option>
+                                <option value="+49">DE +49</option>
+                            </select>
+                            <input type="tel" class="form-control" id="phoneNumberInput" placeholder="Local number">
+                        </div>
+                        <div class="phone-helper" id="phoneHelperText">Kenya +254 · enter the local number without the international prefix.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Referral code</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-wand-magic-sparkles left-icon"></i>
+                            <input type="text" id="reg-referral" class="form-control" placeholder="OPTIONAL CODE">
+                        </div>
+                        <div class="input-hint">Optional. Add a code if someone invited you.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock left-icon"></i>
+                            <input type="password" class="form-control" placeholder="••••••••" id="regPassword" required>
+                            <button type="button" class="password-toggle" id="toggleRegPassword"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <div class="input-hint">Use at least 6 characters with a letter and number.</div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="regSubmitBtn">
+                        Create account <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <div class="auth-message" id="regMessage"></div>
+
+                    <div class="card-footer-text">
+                        Already have an account? <a id="to-login">Sign in</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- LOGIN VIEW (default visible) -->
+            <div id="login-view">
+                <div class="card-header-flex">
+                    <div>
+                        <div class="card-top-title">Welcome Back</div>
+                        <h2>Sign in to trade</h2>
+                    </div>
+                    <div class="shield-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+                <p class="card-desc">Enter your credentials to continue to the terminal.</p>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">Email address</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope left-icon"></i>
+                            <input type="email" id="login-email" class="form-control" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock left-icon"></i>
+                            <input type="password" class="form-control" placeholder="••••••••" id="loginPassword" required>
+                            <button type="button" class="password-toggle" id="toggleLoginPassword"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <!-- Forgot password link -->
+                        <a id="forgot-password-link" class="forgot-password-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="loginSubmitBtn">
+                        Sign in <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <div class="auth-message" id="loginMessage"></div>
+
+                    <div class="card-footer-text">
+                        New to GoldlineMarkets? <a id="to-register">Create an account</a>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- Panel 2: Manage Trades (Stop Loss & Take Profit) -->
-    <div class="form-panel" id="manageFormPanel">
-      <div class="panel-title">Manage Open Positions</div>
-      <form id="manageOrderForm">
-        <div class="trade-form-grid grid-manage">
-          <div class="form-group">
-            <label for="stopLoss">Stop Loss (SL)</label>
-            <input type="number" id="stopLoss" step="0.0001" placeholder="Price / Pips" required>
-          </div>
-          <div class="form-group">
-            <label for="takeProfit">Take Profit (TP)</label>
-            <input type="number" id="takeProfit" step="0.0001" placeholder="Price / Pips" required>
-          </div>
-        </div>
-        <div class="manage-actions">
-          <button type="submit" class="btn btn-proceed">Update Order</button>
-          <button type="button" class="btn btn-danger" id="closeAllBtn">Close All Trades</button>
-        </div>
-      </form>
+    <div class="global-footer">
+        <i class="fa-solid fa-lock" style="font-size: 0.65rem;"></i> Your credentials are encrypted and your session is protected.
     </div>
-  </main>
 
-  <div class="chat-widget" role="button" aria-label="Open chat">
-    <svg viewBox="0 0 24 24">
-      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-    </svg>
-  </div>
+    <!-- Firebase SDK and Auth Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-analytics.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import {
+            getDatabase,
+            ref,
+            set
+        } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
-  <!-- Toast Notification -->
-  <div class="toast" id="toast">
-    <span class="toast-icon">
-      <svg viewBox="0 0 24 24">
-        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-      </svg>
-    </span>
-    <span class="toast-message" id="toastMessage">Trades Successfully Updated</span>
-    <button class="toast-close" id="toastClose">
-      <svg viewBox="0 0 24 24">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-      </svg>
-    </button>
-  </div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB411BhnMe-xN4rm6HHPkxLnBQM1hfAJ5E",
+            authDomain: "alti-101.firebaseapp.com",
+            databaseURL: "https://alti-101-default-rtdb.firebaseio.com",
+            projectId: "alti-101",
+            storageBucket: "alti-101.firebasestorage.app",
+            messagingSenderId: "62369585945",
+            appId: "1:62369585945:web:2e289308cbc9fd31824388",
+            measurementId: "G-7WYPG3C39M"
+        };
 
-  <script>
-    const FIREBASE_DB_URL = "https://altibex-19bc2-default-rtdb.firebaseio.com/";
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-    const placeTradesBtn = document.getElementById('placeTradesBtn');
-    const manageTradesBtn = document.getElementById('manageTradesBtn');
-    const placeFormPanel = document.getElementById('placeFormPanel');
-    const manageFormPanel = document.getElementById('manageFormPanel');
-    const closeAllBtn = document.getElementById('closeAllBtn');
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastClose = document.getElementById('toastClose');
+        // View Toggle UI elements
+        const registerView = document.getElementById('register-view');
+        const loginView = document.getElementById('login-view');
+        const toLoginBtn = document.getElementById('to-login');
+        const toRegisterBtn = document.getElementById('to-register');
 
-    // Toast functions
-    function showToast(message) {
-      toastMessage.textContent = message;
-      toast.classList.add('show');
-      // Auto-hide after 3 seconds
-      clearTimeout(toast._timeout);
-      toast._timeout = setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
-
-    function hideToast() {
-      toast.classList.remove('show');
-      clearTimeout(toast._timeout);
-    }
-
-    toastClose.addEventListener('click', hideToast);
-
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (toast.classList.contains('show') && !toast.contains(e.target)) {
-        hideToast();
-      }
-    });
-
-    // Panel Toggle
-    placeTradesBtn.addEventListener('click', () => {
-      manageFormPanel.style.display = 'none';
-      placeFormPanel.style.display = placeFormPanel.style.display === 'block' ? 'none' : 'block';
-    });
-
-    manageTradesBtn.addEventListener('click', () => {
-      placeFormPanel.style.display = 'none';
-      manageFormPanel.style.display = manageFormPanel.style.display === 'block' ? 'none' : 'block';
-    });
-
-    // 1. Fetch current inputs state on load to populate form inputs
-    async function loadInputsState() {
-      try {
-        const response = await fetch(`${FIREBASE_DB_URL}inputsState.json`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data) {
-            if (data.lotSize) document.getElementById('lotSize').value = data.lotSize;
-            if (data.orderType) document.getElementById('orderType').value = data.orderType;
-            if (data.numTrades) document.getElementById('numTrades').value = data.numTrades;
-            if (data.pair) document.getElementById('pair').value = data.pair;
-            if (data.stopLoss) document.getElementById('stopLoss').value = data.stopLoss;
-            if (data.takeProfit) document.getElementById('takeProfit').value = data.takeProfit;
-          }
-        }
-      } catch (error) {
-        console.error("Error loading inputsState:", error);
-      }
-    }
-
-    // 2. On "Proceed" - ALWAYS send data to Firebase even if same values
-    document.getElementById('placeOrderForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const placeParams = {
-        lotSize: document.getElementById('lotSize').value,
-        orderType: document.getElementById('orderType').value,
-        numTrades: document.getElementById('numTrades').value,
-        pair: document.getElementById('pair').value,
-        timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
-      };
-
-      try {
-        // First, update the inputsState
-        await fetch(`${FIREBASE_DB_URL}inputsState.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(placeParams)
+        toLoginBtn.addEventListener('click', () => {
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            history.pushState(null, '', '/login');
         });
 
-        // Then, send a command to trigger the bot
-        await fetch(`${FIREBASE_DB_URL}commands.json`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'PLACE_TRADES', 
-            params: placeParams,
-            timestamp: new Date().toISOString()
-          })
+        toRegisterBtn.addEventListener('click', () => {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+            history.pushState(null, '', '/register');
         });
 
-        showToast(`✅ ${placeParams.numTrades} Trade(s) sent successfully!`);
-      } catch (error) {
-        console.error('Failed to update inputsState:', error);
-        showToast('❌ Failed to send trades');
-      }
-    });
+        // Phone country prefix updater
+        const countrySelect = document.getElementById('countryCodeSelect');
+        const phoneHelperText = document.getElementById('phoneHelperText');
+        const countryNames = {
+            "+254": "Kenya",
+            "+1": "United States/Canada",
+            "+44": "United Kingdom",
+            "+27": "South Africa",
+            "+234": "Nigeria",
+            "+256": "Uganda",
+            "+255": "Tanzania",
+            "+91": "India",
+            "+61": "Australia",
+            "+49": "Germany"
+        };
 
-    // 3. On "Update Order" - ALWAYS send data to Firebase even if same values
-    document.getElementById('manageOrderForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const manageParams = {
-        stopLoss: document.getElementById('stopLoss').value,
-        takeProfit: document.getElementById('takeProfit').value,
-        timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
-      };
-
-      try {
-        // First, update the inputsState
-        await fetch(`${FIREBASE_DB_URL}inputsState.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(manageParams)
+        countrySelect.addEventListener('change', (e) => {
+            const code = e.target.value;
+            const countryName = countryNames[code] || "Selected country";
+            phoneHelperText.textContent = `${countryName} ${code} · enter the local number without the international prefix.`;
         });
 
-        // Then, send a command to trigger the bot
-        await fetch(`${FIREBASE_DB_URL}commands.json`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'UPDATE_ORDERS', 
-            params: manageParams,
-            timestamp: new Date().toISOString()
-          })
+        // Password Visibility toggles
+        document.getElementById('toggleRegPassword').addEventListener('click', () => {
+            const pwd = document.getElementById('regPassword');
+            pwd.type = pwd.type === 'password' ? 'text' : 'password';
+        });
+        document.getElementById('toggleLoginPassword').addEventListener('click', () => {
+            const pwd = document.getElementById('loginPassword');
+            pwd.type = pwd.type === 'password' ? 'text' : 'password';
         });
 
-        showToast('✅ Stop Loss & Take Profit Updated!');
-      } catch (error) {
-        console.error('Failed to update inputsState:', error);
-        showToast('❌ Failed to update orders');
-      }
-    });
+        // ---------- FORGOT PASSWORD ----------
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const loginMessage = document.getElementById('loginMessage');
 
-    // 4. Close All Trades Button - Immediate action, no confirmation
-    closeAllBtn.addEventListener('click', async () => {
-      try {
-        await fetch(`${FIREBASE_DB_URL}commands.json`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'CLOSE_ALL_TRADES', 
-            timestamp: new Date().toISOString() 
-          })
+        forgotPasswordLink.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            if (!email) {
+                loginMessage.textContent = "Please enter your email address first.";
+                loginMessage.className = "auth-message error";
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                loginMessage.textContent = "Password reset email sent! Check your inbox.";
+                loginMessage.className = "auth-message success";
+            } catch (error) {
+                let errorText = error.message;
+                if (error.code === 'auth/user-not-found') {
+                    errorText = "No account found with this email.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = "Invalid email address.";
+                }
+                loginMessage.textContent = errorText;
+                loginMessage.className = "auth-message error";
+            }
         });
-        showToast('✅ All trades closed successfully!');
-      } catch (error) {
-        console.error('Failed to send close all trades command:', error);
-        showToast('❌ Failed to close trades');
-      }
-    });
 
-    document.addEventListener('DOMContentLoaded', loadInputsState);
-  </script>
+        // Registration handler
+        const registerForm = document.getElementById('register-form');
+        const regSubmitBtn = document.getElementById('regSubmitBtn');
+        const regMessage = document.getElementById('regMessage');
 
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            regMessage.textContent = "";
+            regMessage.className = "auth-message";
+
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const countryCode = countrySelect.value;
+            const localPhone = document.getElementById('phoneNumberInput').value.trim();
+            const phoneNumber = localPhone ? `${countryCode} ${localPhone}` : "";
+            const referralCode = document.getElementById('reg-referral').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            regSubmitBtn.disabled = true;
+            regSubmitBtn.style.opacity = '0.7';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await set(ref(db, 'users/' + user.uid), {
+                    username: username,
+                    email: email,
+                    phoneNumber: phoneNumber,
+                    referralCode: referralCode,
+                    createdAt: new Date().toISOString()
+                });
+
+                regMessage.textContent = "Registration successful! Redirecting to dashboard...";
+                regMessage.className = "auth-message success";
+                setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
+            } catch (error) {
+                let errorText = error.message;
+                if (error.code === 'auth/email-already-in-use') errorText = "Email already registered.";
+                else if (error.code === 'auth/invalid-email') errorText = "Invalid email address.";
+                else if (error.code === 'auth/weak-password') errorText = "Password should be at least 6 characters.";
+                regMessage.textContent = errorText;
+                regMessage.className = "auth-message error";
+                regSubmitBtn.disabled = false;
+                regSubmitBtn.style.opacity = '1';
+            }
+        });
+
+        // Login handler — shows "Login Successful" then redirects to dashboard.html
+        const loginForm = document.getElementById('login-form');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginMessage.textContent = "";
+            loginMessage.className = "auth-message";
+
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            loginSubmitBtn.disabled = true;
+            loginSubmitBtn.style.opacity = '0.7';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Show success message
+                loginMessage.textContent = "Login Successful";
+                loginMessage.className = "auth-message success";
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.style.opacity = '1';
+                // Redirect to dashboard after a short delay
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 800);
+            } catch (error) {
+                let errorText = error.message;
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorText = "Invalid email or password.";
+                }
+                loginMessage.textContent = errorText;
+                loginMessage.className = "auth-message error";
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.style.opacity = '1';
+            }
+        });
+    </script>
 </body>
 </html>
