@@ -11152,6 +11152,8 @@
       botActiveTrade = null;
       botOpeningTrade = false;
       botClosingTrade = false;
+      // Clear any stale persisted stats for a genuinely new session
+      clearBotStatsFromLocalStorage();
 
       botRunning = true;
       startRobotBtn.textContent = 'Stop trading';
@@ -11264,6 +11266,14 @@
 
         if (botRunning) {
           stopBotAndPersist('user_stop');
+          // Reset statistics on explicit user stop
+          botTradeCount = 0;
+          botWinCount = 0;
+          botLossCount = 0;
+          botTotalProfit = 0;
+          botCumulativeProfit = 0;
+          restoreBotStatsUI();
+          clearBotStatsFromLocalStorage();
         } else {
           startBot();
         }
@@ -12084,222 +12094,18 @@
     }, 500);
 
     // ============================================================
-    // BOT STATISTICS PERSISTENCE - CLEAR ON STOP
+    // BOT STATISTICS PERSISTENCE - EXECUTABLE IMPLEMENTATION NOTES
     // ============================================================
-    // The stopBotAndPersist function is already updated to NOT clear statistics.
-    // We must ensure that statistics are ONLY cleared when the user explicitly stops the bot.
-    // The current stopBotAndPersist does not clear statistics - this is correct.
-    // Statistics are cleared in the startBot function when a new session begins.
-    // This maintains the required behavior.
-    //
-    // When the user presses "Stop trading", we want to reset statistics.
-    // We modify stopBotAndPersist to reset statistics and clear localStorage.
-    // Wait, the requirement says: "Pressing 'Stop trading' resets statistics to zero."
-    // and "Stopping the bot clears/resets the persisted bot statistics."
-    // But it also says: "The statistics must ONLY be reset when the user actually stops the bot/trading session."
-    // And: "REFRESH: KEEP statistics. LOGOUT: KEEP statistics. PAGE RELOAD: KEEP statistics.
-    // BOT AUTOMATICALLY RESTORES AS RUNNING: KEEP statistics. USER PRESSES 'STOP TRADING': RESET statistics."
-    //
-    // So we need to reset statistics when the user presses "Stop trading".
-    // But we must NOT reset statistics when the bot stops automatically due to
-    // stop_loss, take_profit, market_closed, etc., because those are part of the ongoing session?
-    // The requirement says: "A bot session's statistics should be reset when the bot has actually stopped and
-    // the application treats that bot session as finished."
-    // And: "Do not reset statistics merely because the browser was refreshed."
-    //
-    // The existing automatic stop conditions (stop_loss, take_profit, market_closed)
-    // likely end the session. However, to be safe and minimal, we will only reset
-    // statistics in the stopBotAndPersist function when the reason is 'user_stop'.
-    // For other reasons, we will leave statistics intact but save the running state as false.
-    // This preserves the existing behavior for automatic stops while satisfying the requirement.
-    //
-    // Actually, the requirement says: "If the existing application has automatic stop conditions that
-    // intentionally end the bot session, preserve their existing behavior and make the persistence
-    // logic consistent with that existing stop behavior."
-    //
-    // We will interpret that automatic stops (stop_loss, take_profit, market_closed) also end the session,
-    // so we should reset statistics for those as well. But to be conservative and not break anything,
-    // we will reset statistics only when the reason is 'user_stop' or when the bot is stopped by the user.
-    // For automatic stops, we will keep statistics so that if the bot is restarted, it continues from where it left off?
-    // But the requirement says: "A genuine NEW bot session should start with zero statistics."
-    // So if the bot stops automatically and the user later starts it again, that should be a new session with zero stats.
-    // But if the bot stops automatically, the running state is removed, so on refresh it won't auto-restore.
-    // If the user manually starts the bot after an automatic stop, startBot resets statistics to zero.
-    // So automatic stops don't need to reset statistics because they are not restored; the user must start a new session.
-    // However, if the automatic stop occurs and the user does NOT refresh, the statistics remain in memory and in localStorage.
-    // Then if the user presses "Start trading" again, startBot resets them to zero.
-    // That's fine.
-    //
-    // But what about the localStorage stats? If the bot stops automatically, the running state is removed,
-    // but the stats remain in localStorage. If the user refreshes, the bot won't auto-restore (since running state is gone).
-    // The stats will remain in localStorage but won't be loaded because botRunning is false.
-    // Then if the user starts a new bot session, startBot resets in-memory stats to zero and overwrites localStorage with zeros.
-    // This is acceptable.
-    //
-    // Therefore, we only need to reset stats on user_stop to satisfy "Pressing Stop trading resets statistics".
-    // We will modify stopBotAndPersist to reset stats only when reason === 'user_stop'.
-    // We must be careful: the existing code calls stopBot('user_stop') in the logout handler.
-    // On logout, should we reset stats? The requirement says: "DO NOT remove the bot statistics localStorage key during logout."
-    // So we should NOT reset stats on logout. But the logout handler calls stopBotAndPersist('user_stop') if bot is running.
-    // That would reset stats on logout, which is not desired.
-    // So we need to distinguish between user pressing Stop and logout.
-    // We can add a parameter to stopBotAndPersist to indicate whether to reset stats.
-    // But the requirement says: "DO NOT add/remove code that clears: ... during logout."
-    // So we must not clear stats during logout.
-    //
-    // The simplest solution: only reset stats when the user explicitly presses the "Stop trading" button.
-    // We can add a separate flag or handle it in the button handler.
-    // In the button handler, when botRunning is true and user clicks, we call stopBotAndPersist('user_stop').
-    // We can set a global flag to indicate a user-initiated stop.
-    //
-    // However, the requirement says to modify the persistence logic minimally.
-    // We will implement a simple approach:
-    // - In the button click handler for "Stop trading", we will reset stats and clear localStorage after stopping.
-    // - In other stop paths (stop_loss, take_profit, market_closed, logout), we will NOT reset stats.
-    //
-    // This means we need to separate the stop logic.
-    // We'll keep stopBotAndPersist as is (it just stops the bot and saves running state false).
-    // Then in the button handler, after calling stopBotAndPersist, we will reset stats and clear localStorage.
-    //
-    // But we must also ensure that if the bot stops automatically, stats remain in memory and localStorage.
-    // Then if the user refreshes, the bot won't auto-restore (running state false), but stats remain in localStorage.
-    // If the user then starts a new session, startBot resets stats to zero and overwrites localStorage.
-    // This is acceptable.
-    //
-    // So we will modify the button handler to reset stats only when user explicitly stops.
-    // We will also need to update the UI after resetting.
+    // The executable reset logic is now implemented directly inside:
+    //   1. The live startRobotBtn click handler (user_stop path), and
+    //   2. startBot() (new session path).
+    // See those functions above. Statistics are only cleared when the user
+    // explicitly presses "Stop trading". Refresh, logout, and automatic
+    // stop paths (stop_loss, take_profit, market_closed) preserve statistics.
 
-    // Let's implement the button handler modification:
-    // The existing button handler:
-    // if (botRunning) { stopBotAndPersist('user_stop'); } else { startBot(); }
-    //
-    // We change it to:
-    // if (botRunning) {
-    //   stopBotAndPersist('user_stop');
-    //   // Reset stats
-    //   botTradeCount = 0; botWinCount = 0; botLossCount = 0; botTotalProfit = 0; botCumulativeProfit = 0;
-    //   restoreBotStatsUI();
-    //   clearBotStatsFromLocalStorage();
-    // } else { startBot(); }
-
-    // We must also ensure that startBot does NOT reset stats if we are restoring? No, startBot is only called for new sessions.
-    // startBot already resets stats to zero and saves running state true. It does not save stats to localStorage.
-    // We need to ensure that when a new session starts, we also clear any existing stats from localStorage (to avoid stale data).
-    // We can call clearBotStatsFromLocalStorage() in startBot.
-
-    // Let's make these modifications.
-
-    // We will modify the startRobotBtn click handler to include the reset logic when stopping.
-
-    // We also need to ensure that the restoreBotAfterRefresh function does NOT reset stats (it already loads them from localStorage).
-
-    // We must also ensure that the logout handler does not reset stats. The logout handler calls stopBotAndPersist('user_stop') if botRunning.
-    // That will not reset stats because we are not modifying stopBotAndPersist to reset stats. Good.
-
-    // So final plan:
-    // 1. startBot: reset in-memory stats to zero, clear localStorage stats, save running state true.
-    // 2. restoreBotAfterRefresh: load stats from localStorage, update UI, do NOT reset.
-    // 3. stopBotAndPersist: keep as is (no stats reset).
-    // 4. User presses "Stop trading": call stopBotAndPersist, then reset in-memory stats, update UI, clear localStorage stats.
-    // 5. Automatic stops (stop_loss, take_profit, market_closed): do NOT reset stats. Running state becomes false.
-    // 6. Logout: do NOT reset stats. Running state becomes false.
-    // 7. On logout, stats remain in localStorage.
-    // 8. On login, if bot was running, restoreBotAfterRefresh loads stats.
-    // 9. If bot was not running, stats remain in localStorage but are not loaded until a new session starts (which will reset them).
-
-    // This satisfies all requirements.
-
-    // We need to modify the startBot function to clear localStorage stats.
-    // We need to modify the startRobotBtn click handler to reset stats when stopping.
-
-    // Let's implement these changes.
-
-    // We'll override the startRobotBtn click handler with the new logic.
-    // Since the existing handler is already attached, we need to remove it and add a new one.
-    // But we can't easily remove an anonymous function. We can replace the element or use a flag.
-    // Instead, we can modify the existing handler by re-assigning it.
-    // We'll do it by using a named function and replacing the listener.
-
-    // We'll capture the original handler? No, we'll just remove all listeners and add new ones.
-    // But we don't have a reference to the original handler. We can use the onclick property? No.
-    // We'll use a different approach: we'll add a new listener that runs first and sets a flag, but that's messy.
-    // Simpler: we'll modify the code directly in the script by replacing the event listener assignment.
-    // Since we are editing the file, we can directly change the code in the button handler.
-
-    // In the actual file, the button handler is:
-    /*
-    if (startRobotBtn) {
-      startRobotBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        ...
-        if (botRunning) {
-          stopBotAndPersist('user_stop');
-        } else {
-          startBot();
-        }
-      });
-    }
-    */
-    // We will change it to:
-    /*
-    if (startRobotBtn) {
-      startRobotBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        ...
-        if (botRunning) {
-          stopBotAndPersist('user_stop');
-          // Reset statistics on explicit user stop
-          botTradeCount = 0;
-          botWinCount = 0;
-          botLossCount = 0;
-          botTotalProfit = 0;
-          botCumulativeProfit = 0;
-          restoreBotStatsUI();
-          clearBotStatsFromLocalStorage();
-        } else {
-          startBot();
-        }
-      });
-    }
-    */
-
-    // And in startBot, we add:
-    // clearBotStatsFromLocalStorage(); after resetting the variables.
-
-    // Let's implement these modifications directly in the code.
-
-    // We'll also need to ensure that the restoreBotAfterRefresh uses the loaded stats, which it does.
-
-    // We'll also update the log messages.
-
-    // That's it.
-
-    // Now we can return the complete file.
-
-    // FINAL VERIFICATION CHECKS:
-    // - Bot stats persist after refresh: Yes, because restoreBotAfterRefresh loads from localStorage.
-    // - Bot running state still persists: Yes, unchanged.
-    // - Restored bot does NOT reset stats to zero: Yes, restoreBotAfterRefresh now loads stats.
-    // - Trades count survives refresh: Yes.
-    // - Profits survive refresh: Yes.
-    // - Loss count survives refresh: Yes.
-    // - Cumulative P/L survives refresh: Yes.
-    // - Statistics saved after every completed bot trade: Yes, we added saveBotStatsToLocalStorage() in closeBotTrade.
-    // - Statistics user-specific: Yes, key uses currentUser.uid.
-    // - Logout does NOT delete stats: Yes, we don't clear them in logout.
-    // - Login restores stats: Yes, if bot running, restoreBotAfterRefresh loads them.
-    // - Pressing "Stop trading" resets stats to zero: Yes, we added reset in the button handler.
-    // - Stopping the bot clears persisted stats: Yes, we call clearBotStatsFromLocalStorage().
-    // - Starting a new session begins from zero: Yes, startBot resets to zero and clears localStorage.
-    // - Existing Firebase balances untouched: Yes.
-    // - Existing Firebase trade history untouched: Yes.
-    // - Existing active-trade logic untouched: Yes.
-    // - No duplicate trades: Yes.
-    // - No duplicate bot intervals: Yes, clearBotIntervals is called.
-    // - No duplicate event listeners: We only modified the button handler, no duplication.
-    // - No unrelated functionality modified: Yes.
-
-    // The fix is complete.
+    // ============================================================
+    // BOT STATISTICS PERSISTENCE - END
+    // ============================================================
 
   </script>
 </body>
