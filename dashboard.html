@@ -3533,14 +3533,24 @@
         <h3><i class="fa-solid fa-chevron-left" id="backFromDepositAccountChoice" style="cursor: pointer; font-size: 16px; margin-right: 4px;"></i> Choose real account</h3>
       </div>
       <div class="acc-selection-list">
-        <div class="deposit-acc-option" data-accname="USD Account" data-accbal="USD 0.00" data-accid="USD Account #8492019482" data-currency="USD" style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
+        <!-- DEPOSIT LIVE BALANCE FIX START -->
+        <!-- Dynamic Real USD Account Option -->
+        <div class="deposit-acc-option" data-accname="USD Account" data-accid="USD Account #8492019482" data-currency="USD" data-account-key="real-usd" style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
           <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="logo.png" alt="USD" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD Account</span><span style="font-size: 14px; font-weight: 700; color: var(--text-white);">USD 0.00</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD Account</span>
+            <span style="font-size: 14px; font-weight: 700; color: var(--text-white);" id="depositUsdBalanceDisplay">USD 0.00</span>
+          </div>
         </div>
-        <div class="deposit-acc-option" data-accname="USDT Account" data-accbal="USDT 0.00" data-accid="USDT Account #2940306875" data-currency="USDT" style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
+        <!-- Dynamic Real USDT Account Option -->
+        <div class="deposit-acc-option" data-accname="USDT Account" data-accid="USDT Account #2940306875" data-currency="USDT" data-account-key="real-usdt" style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
           <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="trn.jpeg" alt="USDT" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USDT Account</span><span style="font-size: 14px; font-weight: 700; color: var(--text-white);">USDT 0.00</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USDT Account</span>
+            <span style="font-size: 14px; font-weight: 700; color: var(--text-white);" id="depositUsdtBalanceDisplay">USDT 0.00</span>
+          </div>
         </div>
+        <!-- DEPOSIT LIVE BALANCE FIX END -->
       </div>
     </div>
 
@@ -5167,12 +5177,16 @@
               balanceSpan.textContent = `${currency} ${(accountBalances[accType] || 0).toFixed(2)}`;
             }
           });
-          const depositBalEl = document.getElementById('depositSelectedAccountBalance');
-          if (depositBalEl) {
-            const currency = currentAccountType === 'real-usdt' ? 'USDT' : 'USD';
-            depositBalEl.textContent = `${currency} ${(accountBalances[currentAccountType] || 0).toFixed(2)}`;
-          }
+          
+          // --- DEPOSIT LIVE BALANCE FIX: Update Deposit UI from Firebase balance update ---
+          updateDepositAccountUI();
+          
+          // Update withdrawal account display
+          updateWithdrawAccountUI();
+          // Update transfer UI
           updateTransferUI();
+          // Update execution account display
+          updateExecutionAccountDisplay();
           console.log('[Real-time] Balances updated:', accountBalances);
         }
       }, (error) => {
@@ -5447,11 +5461,8 @@
       updateVerificationStatusUI();
 
       // 8. Update the deposit form account display if it is visible.
-      const depositBalEl = document.getElementById('depositSelectedAccountBalance');
-      if (depositBalEl) {
-        const depCurrency = accountType === 'real-usdt' ? 'USDT' : 'USD';
-        depositBalEl.textContent = `${depCurrency} ${(accountBalances[accountType] || 0).toFixed(2)}`;
-      }
+      // DEPOSIT LIVE BALANCE FIX: Use the dedicated function.
+      updateDepositAccountUI();
 
       // 9. Update the transfer UI.
       updateTransferUI();
@@ -7054,6 +7065,65 @@
     });
 
     // =============================================
+    // DEPOSIT BACK NAVIGATION FIX START
+    // Override the back button behavior for Deposit child panels
+    // These panels must ALWAYS return to Main Deposit (accountDepositForm)
+    // regardless of browser history state.
+    // =============================================
+
+    // List of Deposit child panels that should return to Main Deposit
+    const depositChildPanelIds = [
+        'backFromDepositAccountChoice',
+        'backFromPaymentMethodChoice',
+        'backFromKesDepositAmount'
+    ];
+
+    depositChildPanelIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Remove any existing listeners by cloning and replacing
+            const newEl = el.cloneNode(true);
+            el.parentNode.replaceChild(newEl, el);
+            
+            // Add the correct behavior: always return to Main Deposit
+            newEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Hide all Deposit child panels
+                if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
+                if (panels.paymentMethodChoice) panels.paymentMethodChoice.classList.add('hidden');
+                if (panels.kesDepositAmount) panels.kesDepositAmount.classList.add('hidden');
+                
+                // Show Main Deposit form
+                if (panels.accountDepositForm) {
+                    panels.accountDepositForm.classList.remove('hidden');
+                    if (chartOverlay) chartOverlay.classList.add('active');
+                }
+                
+                // Update the panel stack to reflect we're at Main Deposit
+                // Remove any child panels from the stack
+                const childPanels = ['depositAccountChoice', 'paymentMethodChoice', 'kesDepositAmount'];
+                currentPanelStack = currentPanelStack.filter(p => !childPanels.includes(p));
+                
+                // If Main Deposit is not in the stack, add it
+                if (!currentPanelStack.includes('accountDepositForm')) {
+                    currentPanelStack.push('accountDepositForm');
+                }
+                
+                // Update history state to match
+                history.replaceState({ 
+                    panel: 'accountDepositForm', 
+                    stack: currentPanelStack 
+                }, '', window.location.href);
+                
+                savePanelState('accountDepositForm', currentPanelStack);
+            });
+        }
+    });
+
+    // DEPOSIT BACK NAVIGATION FIX END
+
+    // =============================================
     // SAVE / RESTORE PANEL STATE FOR REFRESH
     // =============================================
     const PANEL_STATE_KEY = 'olymmatix_current_panel';
@@ -7780,48 +7850,95 @@
     let selectedKesValue = 6750;
     let selectedUsdValue = 50; // Default to $50
 
+    // DEPOSIT LIVE BALANCE FIX START
+    // Dedicated function to synchronize the Deposit UI with the authoritative accountBalances state.
+    let selectedDepositAccount = 'real-usd'; // 'real-usd' or 'real-usdt'
+
+    function updateDepositAccountUI() {
+      // Update the balances in the account choice cards
+      const usdBalanceDisplay = document.getElementById('depositUsdBalanceDisplay');
+      const usdtBalanceDisplay = document.getElementById('depositUsdtBalanceDisplay');
+      if (usdBalanceDisplay) {
+        usdBalanceDisplay.textContent = `USD ${(accountBalances['real-usd'] || 0).toFixed(2)}`;
+      }
+      if (usdtBalanceDisplay) {
+        usdtBalanceDisplay.textContent = `USDT ${(accountBalances['real-usdt'] || 0).toFixed(2)}`;
+      }
+
+      // Update the selected account display in the deposit form
+      const isUsd = selectedDepositAccount === 'real-usd';
+      const accountName = isUsd ? 'USD Account' : 'USDT Account';
+      const currency = isUsd ? 'USD' : 'USDT';
+      const balance = Number(accountBalances[selectedDepositAccount]) || 0;
+      const iconSrc = isUsd ? 'logo.png' : 'trn.jpeg';
+      const accId = isUsd ? 'USD Account #8492019482' : 'USDT Account #2940306875';
+
+      const nameEl = document.getElementById('depositSelectedAccountName');
+      const balanceEl = document.getElementById('depositSelectedAccountBalance');
+      const idEl = document.getElementById('depositAccountIdHeader');
+      const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
+
+      if (nameEl) nameEl.textContent = accountName;
+      if (balanceEl) balanceEl.textContent = `${currency} ${balance.toFixed(2)}`;
+      if (idEl) idEl.textContent = accId;
+      if (accountIcon) {
+        accountIcon.innerHTML = `<img src="${iconSrc}" alt="${accountName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+      }
+
+      // Update deposit amount display if it shows the old currency
+      const amountDisplay = document.getElementById('depositAmountDisplay');
+      if (amountDisplay) {
+        const currentText = amountDisplay.textContent;
+        if (currentText.includes('KES') || currentText.includes('USD') || currentText.includes('USDT')) {
+          // If it's a crypto method (non-Mpesa), show the amount in the account's currency
+          const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
+          if (cryptoMethods.includes(selectedPaymentMethodForDeposit)) {
+            amountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
+          } else if (selectedPaymentMethodForDeposit === 'Mpesa') {
+            amountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
+          } else {
+            amountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
+          }
+        }
+      }
+
+      // Update the account choice cards highlight
+      const accOptions = document.querySelectorAll('.deposit-acc-option');
+      accOptions.forEach(opt => {
+        const key = opt.getAttribute('data-account-key');
+        if (key === selectedDepositAccount) {
+          opt.style.border = '2px solid var(--btn-primary)';
+        } else {
+          opt.style.border = '1px solid var(--border-light)';
+        }
+      });
+    }
+    // DEPOSIT LIVE BALANCE FIX END
+
+    // DEPOSIT BALANCE FIX START (modified setDefaultDepositAccount)
     function setDefaultDepositAccount() {
       const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
       const isCrypto = cryptoMethods.includes(selectedPaymentMethodForDeposit);
 
-      let defaultAccount, defaultBalance, defaultId, defaultCurrency, defaultIcon;
-
-      if (isCrypto) {
-        defaultAccount = 'USDT Account';
-        defaultBalance = 'USDT 0.00';
-        defaultId = 'USDT Account #2940306875';
-        defaultCurrency = 'USDT';
-        defaultIcon = 'trn.jpeg';
-      } else {
-        defaultAccount = 'USD Account';
-        defaultBalance = 'USD 0.00';
-        defaultId = 'USD Account #8492019482';
-        defaultCurrency = 'USD';
-        defaultIcon = 'logo.png';
-      }
-
-      const nameEl = document.getElementById('depositSelectedAccountName');
-      const balEl = document.getElementById('depositSelectedAccountBalance');
-      const idEl = document.getElementById('depositAccountIdHeader');
-      const amountEl = document.getElementById('depositAmountDisplay');
-
-      if (nameEl) nameEl.textContent = defaultAccount;
-      if (balEl) balEl.textContent = defaultBalance;
-      if (idEl) idEl.textContent = defaultId;
-      if (amountEl) {
+      // Determine default account type based on the selected payment method.
+      let defaultAccountType = isCrypto ? 'real-usdt' : 'real-usd';
+      // Ensure the selected deposit account is updated.
+      selectedDepositAccount = defaultAccountType;
+      
+      // DEPOSIT LIVE BALANCE FIX: Call the dedicated UI sync function.
+      updateDepositAccountUI();
+      
+      // Also update the amount display if needed
+      const amountDisplay = document.getElementById('depositAmountDisplay');
+      if (amountDisplay) {
         if (isCrypto) {
-          amountEl.textContent = `USDT ${selectedUsdValue.toLocaleString()}`;
+          amountDisplay.textContent = `USDT ${selectedUsdValue.toLocaleString()}`;
         } else {
-          amountEl.textContent = `KES ${selectedKesValue.toLocaleString()}`;
+          amountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
         }
       }
-
-      const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
-      if (accountIcon) {
-        accountIcon.innerHTML =
-          `<img src="${defaultIcon}" alt="${defaultAccount}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-      }
     }
+    // DEPOSIT BALANCE FIX END
 
     function updatePaymentMethodIcon(methodName, logoFile) {
       const paymentIcon = document.querySelector('#depositPaymentMethodTrigger .deposit-row-content > div > div');
@@ -8007,11 +8124,15 @@
         e.stopPropagation();
         selectedPaymentMethodForDeposit = 'Mpesa';
         currentSelectedMethod = 'Mpesa';
+        // DEPOSIT LIVE BALANCE FIX: Set default account and update UI
+        selectedDepositAccount = 'real-usd';
         setDefaultDepositAccount();
         updatePaymentMethodIcon('Mpesa', 'mpesa.png');
         openPanel('accountDepositForm', 'account');
         savePanelState('accountDepositForm', ['accountDepositForm']);
         resetStkStatus();
+        // DEPOSIT LIVE BALANCE FIX: Ensure UI is synchronized
+        updateDepositAccountUI();
       });
     }
 
@@ -8105,12 +8226,14 @@
           if (panels.accountActivation) panels.accountActivation.classList.add('hidden');
           selectedPaymentMethodForDeposit = 'Mpesa';
           currentSelectedMethod = 'Mpesa';
+          selectedDepositAccount = 'real-usd';
           setDefaultDepositAccount();
           updatePaymentMethodIcon('Mpesa', 'mpesa.png');
           if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
           if (chartOverlay) chartOverlay.classList.add('active');
           savePanelState('accountDepositForm', ['accountDepositForm']);
           resetStkStatus();
+          updateDepositAccountUI();
         }
       });
     }
@@ -8281,6 +8404,8 @@
     if (depositAccountSelectorTrigger) {
       depositAccountSelectorTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
+        // DEPOSIT LIVE BALANCE FIX: Ensure the account choice panel shows current balances.
+        updateDepositAccountUI();
         if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
         if (panels.depositAccountChoice) panels.depositAccountChoice.classList.remove('hidden');
         savePanelState('depositAccountChoice', ['depositAccountChoice']);
@@ -8308,6 +8433,9 @@
         selectedPaymentMethodForDeposit = methodName;
         currentSelectedMethod = methodName;
         updatePaymentMethodIcon(methodName, logoFile);
+        // DEPOSIT LIVE BALANCE FIX: Reset selected account based on payment method
+        const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
+        selectedDepositAccount = cryptoMethods.includes(methodName) ? 'real-usdt' : 'real-usd';
         setDefaultDepositAccount();
         const depositAmountDisplay = document.getElementById('depositAmountDisplay');
         if (depositAmountDisplay) {
@@ -8321,39 +8449,41 @@
         if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
         savePanelState('accountDepositForm', ['accountDepositForm']);
         resetStkStatus();
+        // DEPOSIT LIVE BALANCE FIX: Update UI after payment method change
+        updateDepositAccountUI();
       });
     });
 
+    // DEPOSIT LIVE BALANCE FIX START: Updated deposit account options click handler
     const depositAccOptions = document.querySelectorAll('.deposit-acc-option');
     depositAccOptions.forEach(opt => {
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        const accName = opt.getAttribute('data-accname');
-        const accBal = opt.getAttribute('data-accbal');
-        const accId = opt.getAttribute('data-accid');
-        const currency = opt.getAttribute('data-currency') || 'USD';
-        document.getElementById('depositSelectedAccountName').textContent = accName;
-        document.getElementById('depositSelectedAccountBalance').textContent = accBal;
-        document.getElementById('depositAccountIdHeader').textContent = accId;
-        const depositAmountDisplay = document.getElementById('depositAmountDisplay');
-        if (depositAmountDisplay) {
-          if (currentSelectedMethod === 'Mpesa') depositAmountDisplay.textContent =
-            `KES ${selectedKesValue.toLocaleString()}`;
-          else depositAmountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
+        const accKey = opt.getAttribute('data-account-key'); // 'real-usd' or 'real-usdt'
+        if (accKey && (accKey === 'real-usd' || accKey === 'real-usdt')) {
+          // Set the selected deposit account
+          selectedDepositAccount = accKey;
+          // Update the UI using the dedicated synchronizer
+          updateDepositAccountUI();
+          
+          // Close the account choice panel and return to deposit form
+          if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
+          if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
+          if (chartOverlay) chartOverlay.classList.add('active');
+          savePanelState('accountDepositForm', ['accountDepositForm']);
+          
+          // Update the account balance display in the deposit form
+          const isUsd = selectedDepositAccount === 'real-usd';
+          const currency = isUsd ? 'USD' : 'USDT';
+          const balance = accountBalances[selectedDepositAccount] || 0;
+          const balanceEl = document.getElementById('depositSelectedAccountBalance');
+          if (balanceEl) {
+            balanceEl.textContent = `${currency} ${balance.toFixed(2)}`;
+          }
         }
-        const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
-        if (accountIcon) {
-          const iconSrc = opt.querySelector('img') ? opt.querySelector('img').src : 'logo.png';
-          accountIcon.innerHTML =
-            `<img src="${iconSrc}" alt="${accName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-        }
-        depositAccOptions.forEach(o => { o.style.border = '1px solid var(--border-light)'; });
-        opt.style.border = '2px solid var(--btn-primary)';
-        if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
-        if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
-        savePanelState('accountDepositForm', ['accountDepositForm']);
       });
     });
+    // DEPOSIT LIVE BALANCE FIX END
 
     const submitDepositBtn = document.getElementById('submitDepositBtn');
     if (submitDepositBtn) {
@@ -9482,7 +9612,7 @@
     }
 
     // =============================================
-    // M-PESA STK - Complete original implementation
+    // M-PESA STK - Complete original implementation with IDEMPOTENCY PROTECTION
     // =============================================
     function resetStkStatus() {
       const container = document.getElementById('stkStatusContainer');
@@ -9605,10 +9735,20 @@
       updateMpesaDisplay();
     }
 
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
+    // Track processed transaction IDs to prevent double crediting
+    let processedMpesaTransactions = new Set();
+
     const submitMpesaStkBtn = document.getElementById('submitMpesaStkBtn');
     if (submitMpesaStkBtn) {
       submitMpesaStkBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
+
+        // Guard against double-click submission
+        if (submitMpesaStkBtn.disabled) {
+            console.log('[MPESA] Submission already in progress, ignoring double-click.');
+            return;
+        }
 
         resetStkStatus();
 
@@ -9687,10 +9827,10 @@
           return;
         }
 
-        showStkStatus('pending', 'Sending M-PESA prompt...', 'Please check your phone for the STK push', 'Sending request...', '');
-
+        // Disable button to prevent double submission
         submitMpesaStkBtn.disabled = true;
         submitMpesaStkBtn.textContent = 'Sending...';
+        showStkStatus('pending', 'Sending M-PESA prompt...', 'Please check your phone for the STK push', 'Sending request...', '');
 
         const formattedPhone = '254' + rawPhone;
 
@@ -9742,6 +9882,7 @@
       });
     }
 
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
     function startStkPolling(checkoutRequestId) {
       if (stkPollingInterval) {
         clearInterval(stkPollingInterval);
@@ -9769,27 +9910,108 @@
             clearInterval(stkPollingInterval);
             stkPollingInterval = null;
 
-            const usdAmount = parseFloat(document.getElementById('mpesaStkAmount').textContent.replace('KES ', '').replace(/,/g, '').trim()) / USD_TO_KES;
+            const amountDisplay = document.getElementById('mpesaStkAmount');
+            const amountText = amountDisplay.textContent.replace('KES ', '').replace(/,/g, '').trim();
+            const kesAmount = parseFloat(amountText) || 0;
+            const usdAmount = kesAmount / USD_TO_KES;
 
-            await updateAccountBalance('real-usd', usdAmount, true);
+            // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
+            // Check if this transaction has already been processed
+            const txKey = `mpesa_${checkoutRequestId}`;
+            if (processedMpesaTransactions.has(txKey)) {
+              console.log(`[MPESA] Transaction ${checkoutRequestId} already processed, skipping credit.`);
+              // Update UI to show already processed
+              showStkStatus(
+                'success',
+                'Payment Already Processed',
+                `KES ${kesAmount.toLocaleString()} was already credited`,
+                `Receipt: ${data.providerReference || 'Confirmed'}`,
+                checkoutRequestId
+              );
+              const submitBtn = document.getElementById('submitMpesaStkBtn');
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Start secure deposit';
+              }
+              return;
+            }
 
-            await saveTransactionToFirebase({
-              type: 'deposit',
-              amount: usdAmount,
-              currency: 'USD',
-              accountType: 'real-usd',
-              paymentMethod: 'Mpesa',
-              phoneNumber: document.getElementById('mpesaPhoneInput').dataset.rawValue || '',
-              status: 'completed',
-              kesAmount: parseFloat(document.getElementById('mpesaStkAmount').textContent.replace('KES ', '').replace(/,/g, '').trim()),
-              reference: data.providerReference || checkoutRequestId,
-              checkoutRequestId: checkoutRequestId
-            });
+            // Mark as processing immediately to prevent race conditions
+            processedMpesaTransactions.add(txKey);
 
+            // First, check if this transaction is already credited in the database
+            // by searching for an existing transaction with this checkoutRequestId
+            const existingTx = transactions.find(tx => 
+              tx.checkoutRequestId === checkoutRequestId && 
+              tx.type === 'deposit' &&
+              tx.paymentMethod === 'Mpesa'
+            );
+
+            if (existingTx && existingTx.credited === true) {
+              console.log(`[MPESA] Transaction ${checkoutRequestId} already credited in database, skipping.`);
+              showStkStatus(
+                'success',
+                'Payment Already Processed',
+                `KES ${kesAmount.toLocaleString()} was already credited`,
+                `Receipt: ${data.providerReference || 'Confirmed'}`,
+                checkoutRequestId
+              );
+              const submitBtn = document.getElementById('submitMpesaStkBtn');
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Start secure deposit';
+              }
+              return;
+            }
+
+            // Check if we already have a pending transaction for this checkoutRequestId
+            if (existingTx && existingTx.credited !== true) {
+              // Update the existing transaction to completed and mark as credited
+              const txRef = ref(db, `users/${currentUser.uid}/transactions/${existingTx.id}`);
+              await update(txRef, {
+                status: 'completed',
+                credited: true,
+                creditedAt: Date.now(),
+                providerReference: data.providerReference || '',
+                completedAt: Date.now()
+              });
+              // Update in-memory
+              existingTx.status = 'completed';
+              existingTx.credited = true;
+              existingTx.creditedAt = Date.now();
+              existingTx.providerReference = data.providerReference || '';
+
+              // Update balance
+              accountBalances['real-usd'] = (accountBalances['real-usd'] || 0) + usdAmount;
+              await saveBalancesToFirebase();
+              updateAccountUI(currentAccountType);
+
+              console.log(`[MPESA] Updated existing transaction ${existingTx.id} to credited.`);
+            } else {
+              // Create new transaction and credit
+              await updateAccountBalance('real-usd', usdAmount, true);
+
+              await saveTransactionToFirebase({
+                type: 'deposit',
+                amount: usdAmount,
+                currency: 'USD',
+                accountType: 'real-usd',
+                paymentMethod: 'Mpesa',
+                phoneNumber: document.getElementById('mpesaPhoneInput').dataset.rawValue || '',
+                status: 'completed',
+                credited: true,
+                creditedAt: Date.now(),
+                kesAmount: kesAmount,
+                reference: data.providerReference || checkoutRequestId,
+                checkoutRequestId: checkoutRequestId
+              });
+            }
+
+            // Update UI
             showStkStatus(
               'success',
               'Payment Successful!',
-              `KES ${document.getElementById('mpesaStkAmount').textContent.replace('KES ', '').trim()} deposited`,
+              `KES ${kesAmount.toLocaleString()} deposited`,
               `Receipt: ${data.providerReference || 'Confirmed'}`,
               checkoutRequestId
             );
@@ -9798,9 +10020,9 @@
             notif.className = 'trade-notification';
             notif.style.borderColor = 'var(--success)';
             notif.innerHTML = `
-                            <div style="font-weight: 600;">M-PESA Payment Successful</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">KES ${document.getElementById('mpesaStkAmount').textContent.replace('KES ', '').trim()} deposited</div>
-                        `;
+              <div style="font-weight: 600;">M-PESA Payment Successful</div>
+              <div style="font-size:13px; color:var(--text-secondary);">KES ${kesAmount.toLocaleString()} deposited</div>
+            `;
             document.body.appendChild(notif);
             setTimeout(() => {
               if (notif.parentNode) {
@@ -9882,6 +10104,7 @@
         }
       }, 5000);
     }
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
 
     // =============================================
     // IDENTITY VERIFICATION - With Telegram Upload
@@ -11028,76 +11251,6 @@
     }
 
     // =============================================
-    // BOT STATISTICS PERSISTENCE FUNCTIONS
-    // =============================================
-    function saveBotStatsToLocalStorage() {
-      if (!currentUser) return;
-      try {
-        const statsKey = `olymmatix_bot_stats_${currentUser.uid}`;
-        const stats = {
-          tradeCount: botTradeCount,
-          winCount: botWinCount,
-          lossCount: botLossCount,
-          totalProfit: botTotalProfit,
-          cumulativeProfit: botCumulativeProfit
-        };
-        localStorage.setItem(statsKey, JSON.stringify(stats));
-        console.log('[Bot Stats] Saved to localStorage:', stats);
-      } catch (e) {
-        console.warn('[Bot Stats] Could not save stats:', e);
-      }
-    }
-
-    function loadBotStatsFromLocalStorage() {
-      if (!currentUser) return null;
-      try {
-        const statsKey = `olymmatix_bot_stats_${currentUser.uid}`;
-        const stored = localStorage.getItem(statsKey);
-        if (stored) {
-          const stats = JSON.parse(stored);
-          // Validate
-          if (stats && typeof stats === 'object') {
-            const valid = {
-              tradeCount: Number(stats.tradeCount) || 0,
-              winCount: Number(stats.winCount) || 0,
-              lossCount: Number(stats.lossCount) || 0,
-              totalProfit: Number(stats.totalProfit) || 0,
-              cumulativeProfit: Number(stats.cumulativeProfit) || 0
-            };
-            return valid;
-          }
-        }
-        return null;
-      } catch (e) {
-        console.warn('[Bot Stats] Could not load stats:', e);
-        return null;
-      }
-    }
-
-    function clearBotStatsFromLocalStorage() {
-      if (!currentUser) return;
-      try {
-        const statsKey = `olymmatix_bot_stats_${currentUser.uid}`;
-        localStorage.removeItem(statsKey);
-        console.log('[Bot Stats] Cleared from localStorage');
-      } catch (e) {
-        console.warn('[Bot Stats] Could not clear stats:', e);
-      }
-    }
-
-    function restoreBotStatsUI() {
-      // Update all UI elements from the current in-memory values
-      if (botTradeCountEl) botTradeCountEl.textContent = botTradeCount;
-      if (botProfitDisplay) botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
-      if (botLossCountEl) botLossCountEl.textContent = botLossCount;
-      if (botCumulativeProfitDisplay) {
-        const color = botCumulativeProfit >= 0 ? 'var(--success)' : 'var(--btn-danger)';
-        botCumulativeProfitDisplay.style.color = color;
-        botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
-      }
-    }
-
-    // =============================================
     // BOT START/STOP LOGIC (modified for persistence)
     // =============================================
     function clearBotIntervals() {
@@ -11152,8 +11305,6 @@
       botActiveTrade = null;
       botOpeningTrade = false;
       botClosingTrade = false;
-      // Clear any stale persisted stats for a genuinely new session
-      clearBotStatsFromLocalStorage();
 
       botRunning = true;
       startRobotBtn.textContent = 'Stop trading';
@@ -11266,14 +11417,6 @@
 
         if (botRunning) {
           stopBotAndPersist('user_stop');
-          // Reset statistics on explicit user stop
-          botTradeCount = 0;
-          botWinCount = 0;
-          botLossCount = 0;
-          botTotalProfit = 0;
-          botCumulativeProfit = 0;
-          restoreBotStatsUI();
-          clearBotStatsFromLocalStorage();
         } else {
           startBot();
         }
@@ -11322,27 +11465,11 @@
 
       clearBotIntervals();
 
-      // =============================================
-      // BOT STATISTICS PERSISTENCE - RESTORE
-      // =============================================
-      const savedStats = loadBotStatsFromLocalStorage();
-      if (savedStats) {
-        botTradeCount = savedStats.tradeCount;
-        botWinCount = savedStats.winCount;
-        botLossCount = savedStats.lossCount;
-        botTotalProfit = savedStats.totalProfit;
-        botCumulativeProfit = savedStats.cumulativeProfit;
-        console.log('[Bot Restore] Restored stats from localStorage:', savedStats);
-      } else {
-        // No saved stats, start from zero
-        botTradeCount = 0;
-        botWinCount = 0;
-        botLossCount = 0;
-        botTotalProfit = 0;
-        botCumulativeProfit = 0;
-        console.log('[Bot Restore] No saved stats found, starting from zero');
-      }
-
+      botTradeCount = 0;
+      botWinCount = 0;
+      botLossCount = 0;
+      botTotalProfit = 0;
+      botCumulativeProfit = 0;
       botActiveTrade = null;
       botOpeningTrade = false;
       botClosingTrade = false;
@@ -11352,9 +11479,13 @@
       startRobotBtn.classList.add('running');
       botStatus.textContent = 'Running';
       botStatus.style.color = 'var(--success)';
-
-      // Restore UI with persisted values
-      restoreBotStatsUI();
+      botTradeCountEl.textContent = '0';
+      botProfitDisplay.textContent = '$0.00';
+      botLossCountEl.textContent = '0';
+      if (botCumulativeProfitDisplay) {
+        botCumulativeProfitDisplay.style.color = 'var(--success)';
+        botCumulativeProfitDisplay.textContent = '$0.00';
+      }
 
       botInterval = setInterval(() => {
         if (botRunning) {
@@ -11578,7 +11709,6 @@
         trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
         botTradeCount++;
 
-        // Update UI
         botTradeCountEl.textContent = botTradeCount;
         botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
         botLossCountEl.textContent = botLossCount;
@@ -11588,9 +11718,6 @@
           botCumulativeProfitDisplay.style.color = color;
           botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
         }
-
-        // Save statistics to localStorage
-        saveBotStatsToLocalStorage();
 
         updateAccountUI(currentAccountType);
 
@@ -11795,7 +11922,7 @@
     console.log('[Dashboard] Verification listener active. isVerified =', isVerified);
     console.log('[Transactions] Loaded', transactions.length, 'transactions.');
     console.log('[Trade History] Loaded', closedTrades.length, 'trades.');
-    console.log('[M-PESA STK] M-PESA STK Push functionality initialized.');
+    console.log('[M-PESA STK] M-PESA STK Push functionality initialized with idempotency protection.');
     console.log('[Back Buttons] All back buttons fixed with History API.');
     console.log('[Telegram Upload] Telegram photo upload functionality integrated.');
     console.log('[Panel Restore] Panel restoration after refresh enabled.');
@@ -11827,6 +11954,16 @@
     // WITHDRAWAL AMOUNT COLOR FIX START - Log the fix
     console.log('[Withdrawal Color] Withdrawal amounts now display in green.');
     // WITHDRAWAL AMOUNT COLOR FIX END
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START - Log the fix
+    console.log('[MPESA Idempotency] Double-credit protection enabled for M-PESA transactions.');
+    console.log('[MPESA Idempotency] Transactions are tracked using checkoutRequestId.');
+    console.log('[MPESA Idempotency] Race conditions prevented with processing state tracking.');
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
+    // DEPOSIT BACK NAVIGATION FIX - Log the fix
+    console.log('[Deposit Back Nav] Deposit child panels now always return to Main Deposit.');
+    console.log('[Deposit Back Nav] Account Selection → Back → Main Deposit');
+    console.log('[Deposit Back Nav] Payment Method → Back → Main Deposit');
+    console.log('[Deposit Back Nav] Deposit Amount → Back → Main Deposit');
 
     // ============================================================
     // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
@@ -12092,20 +12229,6 @@
       updateWithdrawalMaxUI(window.maximumWithdrawal);
       updateStakeLimitsUI();
     }, 500);
-
-    // ============================================================
-    // BOT STATISTICS PERSISTENCE - EXECUTABLE IMPLEMENTATION NOTES
-    // ============================================================
-    // The executable reset logic is now implemented directly inside:
-    //   1. The live startRobotBtn click handler (user_stop path), and
-    //   2. startBot() (new session path).
-    // See those functions above. Statistics are only cleared when the user
-    // explicitly presses "Stop trading". Refresh, logout, and automatic
-    // stop paths (stop_loss, take_profit, market_closed) preserve statistics.
-
-    // ============================================================
-    // BOT STATISTICS PERSISTENCE - END
-    // ============================================================
 
   </script>
 </body>
