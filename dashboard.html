@@ -7031,215 +7031,9 @@
       return symbolMap[asset] || 'OANDA:EURUSD';
     }
 
-    // ============================================================
-    // TRADINGVIEW CHART STATE PERSISTENCE (NEW - SURGICAL ADDITION)
-    // Persists per authenticated user: timeframe, volume visibility,
-    // and drawings across page refresh. Isolated to TradingView only.
-    // ============================================================
-    let tvStateListenersAttached = false;
-    let tvStateSaveTimer = null;
-    let tvRestoringDrawings = false;
-
-    function getTvStateKey() {
-      try {
-        if (currentUser && currentUser.uid) {
-          return `olymmatix_tv_state_${currentUser.uid}`;
-        }
-      } catch (e) {}
-      return 'olymmatix_tv_state_guest';
-    }
-
-    function loadTvPrefs() {
-      try {
-        const raw = localStorage.getItem(getTvStateKey());
-        if (!raw) return null;
-        const data = JSON.parse(raw);
-        if (!data || typeof data !== 'object') return null;
-        return data;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    // debounced save to avoid hammering localStorage on rapid changes
-    function saveTvPrefs(partial) {
-      if (tvRestoringDrawings) return; // never save while restoring
-      const existing = loadTvPrefs() || {};
-      const merged = Object.assign({}, existing, partial || {});
-      merged.updatedAt = Date.now();
-      try {
-        localStorage.setItem(getTvStateKey(), JSON.stringify(merged));
-      } catch (e) {
-        console.warn('[TV State] could not save:', e);
-      }
-    }
-
-    function saveTvPrefsDebounced(partial) {
-      if (tvStateSaveTimer) clearTimeout(tvStateSaveTimer);
-      tvStateSaveTimer = setTimeout(() => {
-        tvStateSaveTimer = null;
-        saveTvPrefs(partial);
-      }, 400);
-    }
-
-    // Detect whether the chart currently contains a Volume study.
-    // This mirrors the logic already used by removeVolumePane().
-    function chartHasVolumeStudy(chart) {
-      if (!chart) return false;
-      try {
-        const studies = chart.getAllStudies() || [];
-        for (const s of studies) {
-          if (s && s.name && String(s.name).toLowerCase().includes('volume')) {
-            return true;
-          }
-        }
-      } catch (e) {}
-      return false;
-    }
-
-    // Capture drawings state from the chart. TradingView's tv.js widget
-    // exposes chart.saveChartToServer / chart.loadChartFromServer on some
-    // versions, but not universally. We prefer the Widget's own state API
-    // if present; otherwise we leave drawings untouched by TV itself
-    // (TV already persists per user on their server when logged in).
-    // This function only captures if a supported API is available.
-    function captureTvDrawings() {
-      if (!tradingViewWidget) return Promise.resolve(null);
-      try {
-        const chart = tradingViewWidget.activeChart && tradingViewWidget.activeChart();
-        if (!chart) return Promise.resolve(null);
-        // Prefer chart.saveChartToServer(callback) if available
-        if (typeof chart.saveChartToServer === 'function') {
-          return new Promise((resolve) => {
-            try {
-              chart.saveChartToServer((state) => {
-                // state may be null; guard
-                if (state && typeof state === 'object') {
-                  resolve(state);
-                } else {
-                  resolve(null);
-                }
-              }, { chartId: 'goldline-default' });
-            } catch (e) {
-              resolve(null);
-            }
-          });
-        }
-      } catch (e) {}
-      return Promise.resolve(null);
-    }
-
-    async function restoreTvDrawings(savedChartState) {
-      if (!tradingViewWidget || !savedChartState) return;
-      try {
-        const chart = tradingViewWidget.activeChart && tradingViewWidget.activeChart();
-        if (!chart) return;
-        if (typeof chart.loadChartFromServer === 'function') {
-          tvRestoringDrawings = true;
-          try {
-            await new Promise((resolve) => {
-              try {
-                chart.loadChartFromServer('goldline-default', savedChartState, () => resolve());
-                setTimeout(resolve, 1500); // safety timeout
-              } catch (e) { resolve(); }
-            });
-          } finally {
-            // small delay before re-enabling saves so TV doesn't immediately
-            // fire change events and clobber what we just loaded
-            setTimeout(() => { tvRestoringDrawings = false; }, 800);
-          }
-        }
-      } catch (e) {
-        tvRestoringDrawings = false;
-        console.warn('[TV State] drawing restore failed:', e);
-      }
-    }
-
-    // Attach listeners that save user chart changes (timeframe, volume, drawings).
-    // Attached once per widget lifetime. Safe to call after widget recreation.
-    function attachTvStateListeners() {
-      if (!tradingViewWidget) return;
-
-      try {
-        tradingViewWidget.onChartReady(() => {
-          try {
-            const c = tradingViewWidget.activeChart();
-            if (!c) return;
-
-            // 1) Interval / timeframe changes
-            if (typeof c.onIntervalChanged === 'function') {
-              c.onIntervalChanged().subscribe(null, (interval, timeframeObj) => {
-                const intervalStr = (timeframeObj && timeframeObj.interval)
-                  ? String(timeframeObj.interval)
-                  : String(interval || '');
-                if (intervalStr) {
-                  saveTvPrefsDebounced({ interval: intervalStr });
-                }
-              });
-            }
-
-            // 2) Drawing/study changes. tv.js does not expose a universal
-            // "onStudyChange" callback across all chart builds. We use
-            // onStudyAdded / onStudyRemoved when available.
-            if (typeof c.onStudyAdded === 'function') {
-              try {
-                c.onStudyAdded().subscribe(null, () => {
-                  // Update volume preference if a volume study appears
-                  if (chartHasVolumeStudy(c)) {
-                    saveTvPrefsDebounced({ volumeVisible: true });
-                  }
-                });
-              } catch (e) {}
-            }
-            if (typeof c.onStudyRemoved === 'function') {
-              try {
-                c.onStudyRemoved().subscribe(null, () => {
-                  if (!chartHasVolumeStudy(c)) {
-                    saveTvPrefsDebounced({ volumeVisible: false });
-                  }
-                });
-              } catch (e) {}
-            }
-          } catch (e) {
-            console.warn('[TV State] listener attach failed:', e);
-          }
-        });
-      } catch (e) {
-        console.warn('[TV State] onChartReady not available:', e);
-      }
-
-      // Fallback: light, non-aggressive periodic snapshot of the volume
-      // preference only (cheap check). This is NOT a full-state save.
-      if (!attachTvStateListeners._pollTimer) {
-        attachTvStateListeners._pollTimer = setInterval(async () => {
-          if (tvRestoringDrawings) return;
-          if (!tradingViewWidget) return;
-          try {
-            const c = tradingViewWidget.activeChart && tradingViewWidget.activeChart();
-            if (!c) return;
-            const hasVolume = chartHasVolumeStudy(c);
-            const stored = loadTvPrefs() || {};
-            if (stored.volumeVisible !== hasVolume) {
-              saveTvPrefsDebounced({ volumeVisible: hasVolume });
-            }
-          } catch (e) {}
-        }, 3000);
-      }
-    }
-
     function removeVolumePane() {
       try {
         if (!tradingViewWidget) return;
-        // --- TV PERSISTENCE: respect user's saved Volume preference ---
-        // If the user explicitly enabled Volume, do NOT remove it.
-        try {
-          const prefs = loadTvPrefs() || {};
-          if (prefs.volumeVisible === true) {
-            console.log('[TV State] Volume preference is ENABLED — skipping removal.');
-            return;
-          }
-        } catch (e) {}
-        // ---------------------------------------------------------------
         const chart = tradingViewWidget.activeChart();
         if (!chart) return;
         const studies = chart.getAllStudies();
@@ -7279,17 +7073,10 @@
         }
       }
 
-      // --- TV PERSISTENCE: read saved prefs, fall back to existing defaults ---
-      const _savedTvPrefs = loadTvPrefs() || {};
-      const _savedInterval = (_savedTvPrefs.interval !== undefined && _savedTvPrefs.interval !== null)
-        ? String(_savedTvPrefs.interval)
-        : "15";
-      const _savedStudies = [];
-
       tradingViewWidget = new TradingView.widget({
         autosize: true,
         symbol: initialSymbol,
-        interval: _savedInterval,
+        interval: "15",
         timezone: "Etc/UTC",
         theme: currentTheme,
         style: "1",
@@ -7299,7 +7086,7 @@
         hide_side_toolbar: false,
         allow_symbol_change: false,
         container_id: "tradingview_widget",
-        studies: _savedStudies
+        studies: []
       });
 
       console.log(`[TradingView] Widget initialized with symbol: ${initialSymbol}, theme: ${currentTheme}, toolbar_bg: ${toolbarBg}`);
@@ -7311,20 +7098,8 @@
         if (tradingViewWidget && tradingViewWidget.activeChart()) {
           clearInterval(checkChart);
           setTimeout(() => {
-            // Existing volume removal logic is preserved, but now respects
-            // the user's saved Volume preference (see removeVolumePane).
             removeVolumePane();
             console.log('[TradingView] Volume removal attempted on load');
-            // --- TV PERSISTENCE: restore drawings + attach listeners ---
-            try {
-              const _prefs = loadTvPrefs() || {};
-              if (_prefs.chartState) {
-                restoreTvDrawings(_prefs.chartState);
-              }
-              attachTvStateListeners();
-            } catch (e) {
-              console.warn('[TV State] post-ready init failed:', e);
-            }
           }, 500);
         } else if (attempts >= maxAttempts) {
           clearInterval(checkChart);
@@ -8309,8 +8084,7 @@
               if (chartOverlay) chartOverlay.classList.add('active');
             }
           } else {
-            // User came from Market (root) - stay on Market
-            // Close any open panels and return to market view
+            // User came from Market (root) - stay on Market            // Close any open panels and return to market view
             closeAllPanels();
             if (buttons.market) buttons.market.classList.add('active');
             if (chartOverlay) chartOverlay.classList.remove('active');
@@ -8372,22 +8146,6 @@
     }
 
     function changeAsset(assetName) {
-      // --- TV PERSISTENCE: save current timeframe + drawings before symbol change ---
-      try {
-        if (tradingViewWidget) {
-          const chart = tradingViewWidget.activeChart && tradingViewWidget.activeChart();
-          if (chart && typeof chart.getInterval === 'function') {
-            const curInterval = chart.getInterval();
-            if (curInterval) saveTvPrefs({ interval: String(curInterval) });
-          }
-          // Best-effort: capture drawing state before symbol switch (async, fire-and-forget)
-          captureTvDrawings().then((state) => {
-            if (state) saveTvPrefs({ chartState: state });
-          }).catch(() => {});
-        }
-      } catch (e) {}
-      // ---------------------------------------------------------------------------
-
       selectedAssetName = assetName;
       if (selectedAssetDisplay) selectedAssetDisplay.textContent = assetName;
       updateTopAssetSelector(assetName);
@@ -8435,20 +8193,6 @@
         }
       }
       subscribeToSymbol(assetName);
-
-      // --- TV PERSISTENCE: re-attach listeners on the current widget ---
-      try {
-        setTimeout(() => {
-          try { attachTvStateListeners(); } catch (e) {}
-          // Re-restore drawings saved for this symbol (if any) after the
-          // symbol change settles. Uses the same saved chartState, which is
-          // per-user and applies to the user's TradingView layout.
-          const prefs = loadTvPrefs() || {};
-          if (prefs.chartState) {
-            restoreTvDrawings(prefs.chartState);
-          }
-        }, 1200);
-      } catch (e) {}
     }
 
     if (assetSelectorTrigger) {
@@ -13247,8 +12991,6 @@
 
     console.log('[Support] Two-way support chat initialized. Path: support/{uid}/messages');
     console.log('[Support] Legacy mirror active at received/1970783136/{uid} for Admin Support compatibility.');
-    console.log('[TV State] TradingView per-user chart persistence active: timeframe, volume visibility, and drawings survive refresh.');
-    console.log('[TV State] Storage key pattern: olymmatix_tv_state_{uid}');
 
   </script>
 </body>
