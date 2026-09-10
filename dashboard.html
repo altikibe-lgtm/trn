@@ -1372,76 +1372,6 @@
       background: var(--success);
     }
 
-    /* M-PESA Phone Input */
-    .mpesa-phone-input {
-      background: var(--bg-card);
-      border: 2px solid var(--btn-primary);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-    }
-    .mpesa-phone-input .prefix {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      margin-right: 8px;
-    }
-    .mpesa-phone-input input {
-      background: transparent;
-      border: none;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-white);
-      width: 100%;
-      outline: none;
-      letter-spacing: 1px;
-      font-family: monospace;
-    }
-    .mpesa-phone-input input::placeholder {
-      color: var(--text-secondary);
-      letter-spacing: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    /* M-PESA Method Label */
-    .mpesa-method-label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-    .mpesa-method-label .icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--bg-hover);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .mpesa-method-label .icon img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 50%;
-    }
-    .mpesa-method-label .label {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-white);
-    }
-    .mpesa-method-label .sub-label {
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
     /* Parameter Controls */
     .param-control-group {
       background-color: var(--bg-card);
@@ -1779,33 +1709,6 @@
     }
     .signal-back-btn:hover {
       color: #ff6b7a !important;
-    }
-
-    /* M-PESA Preset Grid */
-    .mpesa-preset-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .mpesa-preset-btn {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 10px;
-      padding: 12px 8px;
-      color: var(--text-white);
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .mpesa-preset-btn:hover {
-      background-color: var(--bg-hover);
-    }
-    .mpesa-preset-btn.active {
-      border: 2px solid var(--btn-primary);
-      background-color: var(--bg-active);
     }
 
     /* Risk Management */
@@ -2467,12 +2370,6 @@
       #withdrawalPanel .deposit-sub-title {
         font-size: 14px !important;
       }
-      #withdrawalPanel .mpesa-phone-input {
-        padding: 14px 16px !important;
-      }
-      #withdrawalPanel .mpesa-phone-input input {
-        font-size: 18px !important;
-      }
 
       .usdt-deposit-header .usdt-title {
         font-size: 20px !important;
@@ -2499,16 +2396,6 @@
       }
       #transferPanel #transferAmountInput {
         font-size: 18px !important;
-      }
-
-      #mpesaStkPanel .deposit-sub-title {
-        font-size: 14px !important;
-      }
-      #mpesaStkPanel .mpesa-phone-input input {
-        font-size: 18px !important;
-      }
-      #mpesaStkPanel #mpesaStkAmount {
-        font-size: 22px !important;
       }
 
       .strategy-option-card {
@@ -2617,10 +2504,6 @@
       .param-step-btn {
         min-width: 36px !important;
         min-height: 36px !important;
-      }
-      .mpesa-preset-btn {
-        padding: 14px 10px !important;
-        font-size: 14px !important;
       }
       .withdraw-preset-btn {
         padding: 10px 18px !important;
@@ -2826,10 +2709,6 @@
         font-size: 24px !important;
       }
 
-      .mpesa-preset-btn {
-        padding: 12px 8px !important;
-        font-size: 13px !important;
-      }
       .withdraw-preset-btn {
         padding: 8px 14px !important;
         font-size: 13px !important;
@@ -2887,65 +2766,6 @@
       .theme-label {
         font-size: 11px !important;
       }
-    }
-
-    /* M-PESA STK Prompt Status */
-    .stk-status-container {
-      display: none;
-      background: var(--bg-card);
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 12px;
-      border: 1px solid var(--border-light);
-      text-align: center;
-    }
-    .stk-status-container.show {
-      display: block;
-    }
-    .stk-status-container .stk-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-    .stk-status-container .stk-icon.pending {
-      color: var(--warning);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    .stk-status-container .stk-icon.success {
-      color: var(--success);
-    }
-    .stk-status-container .stk-icon.failed {
-      color: var(--btn-danger);
-    }
-    .stk-status-container .stk-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-white);
-    }
-    .stk-status-container .stk-sub {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-    .stk-status-container .stk-detail {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 8px;
-      word-break: break-all;
-    }
-    .stk-status-container .stk-reference {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 6px;
-      font-family: monospace;
-      background: var(--bg-input);
-      padding: 4px 8px;
-      border-radius: 4px;
-      display: inline-block;
-    }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
     }
 
     /* =============================================
@@ -3112,6 +2932,7 @@
           <div style="font-size: 13px; font-weight: 600; color: var(--text-white); margin-bottom: 8px;">Execution account</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">Available balance</div>
 
+          <!-- EXECUTION ACCOUNT - INLINE SELECTOR START -->
           <div class="execution-account-card" id="execAccountCard">
             <div class="account-row">
               <div class="account-icon" id="execAccountIcon"><img src="logo.jpg" alt="Demo"></div>
@@ -3119,9 +2940,42 @@
                 <div class="account-name" id="execAccountName">Demo account</div>
                 <div class="account-balance" id="execAccountBalance">$100.00 available</div>
               </div>
-              <div class="account-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+              <div class="account-arrow" id="execAccountArrow"><i class="fa-solid fa-chevron-down"></i></div>
             </div>
           </div>
+          <!-- INLINE ACCOUNT OPTIONS (hidden by default) -->
+          <div id="inlineExecutionAccounts" style="display: none; margin-top: 4px; padding: 6px 0 2px 0;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; overflow: hidden;">
+              <div class="acc-selection-list" style="gap: 4px; padding: 4px;">
+                <!-- Demo Account -->
+                <div class="acc-select-card active" data-account="demo" data-title="Demo account" data-balance="Loading..." data-icon="logo.jpg" data-currency="USD" style="border-radius: 10px; padding: 8px 12px; gap: 10px; background: var(--bg-active);">
+                  <div class="acc-card-icon" style="width: 28px; height: 28px;"><img src="logo.jpg" alt="Demo"></div>
+                  <div class="acc-card-details">
+                    <span class="acc-card-type" style="font-size: 12px;">Demo account</span>
+                    <span class="acc-card-balance" style="font-size: 12px;">Loading...</span>
+                  </div>
+                </div>
+                <!-- Real USD Account -->
+                <div class="acc-select-card" data-account="real-usd" data-title="Real account" data-balance="Loading..." data-icon="logo.png" data-currency="USD" style="border-radius: 10px; padding: 8px 12px; gap: 10px;">
+                  <div class="acc-card-icon" style="width: 28px; height: 28px;"><img src="logo.png" alt="USD"></div>
+                  <div class="acc-card-details">
+                    <span class="acc-card-type" style="font-size: 12px;">Real account</span>
+                    <span class="acc-card-balance" style="font-size: 12px;">Loading...</span>
+                  </div>
+                </div>
+                <!-- Real USDT Account -->
+                <div class="acc-select-card" data-account="real-usdt" data-title="Real account" data-balance="Loading..." data-icon="trn.jpeg" data-currency="USDT" style="border-radius: 10px; padding: 8px 12px; gap: 10px;">
+                  <div class="acc-card-icon" style="width: 28px; height: 28px;"><img src="trn.jpeg" alt="USDT"></div>
+                  <div class="acc-card-details">
+                    <span class="acc-card-type" style="font-size: 12px;">Real account</span>
+                    <span class="acc-card-balance" style="font-size: 12px;">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- EXECUTION ACCOUNT - INLINE SELECTOR END -->
+
         </div>
 
         <div style="margin-bottom: 12px;">
@@ -3438,8 +3292,8 @@
       <div class="deposit-field-group" id="depositPaymentMethodTrigger" style="margin-bottom: 14px;">
         <div class="deposit-row-content">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="mpesa.png" alt="Payment Method" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-            <div class="deposit-item-title" id="depositPaymentMethodTitle">Mpesa</div>
+            <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="binance.png" alt="Payment Method" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
+            <div class="deposit-item-title" id="depositPaymentMethodTitle">Binance</div>
           </div>
           <i class="fa-solid fa-chevron-right" style="color: var(--text-secondary); font-size: 12px;"></i>
         </div>
@@ -3453,12 +3307,12 @@
         <h3 style="font-size: 18px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-chevron-left" id="backToDepositForm" style="cursor: pointer; font-size: 14px;"></i> Confirm payment</h3>
       </div>
       <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
-        <div id="confirmPaymentLogoWrapper" style="width: 52px; height: 52px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border-light);"><img id="confirmPaymentLogoImg" src="mpesa.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
+        <div id="confirmPaymentLogoWrapper" style="width: 52px; height: 52px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border-light);"><img id="confirmPaymentLogoImg" src="binance.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
         <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Deposit amount</div>
         <div id="confirmPaymentAmountDisplay" style="font-size: 24px; font-weight: 800; color: var(--text-white);">$50.00</div>
       </div>
       <div style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 16px; padding: 4px 16px; margin-bottom: auto; display: flex; flex-direction: column;">
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-color);"><span style="font-size: 13px; color: var(--text-secondary);">Payment method</span><span id="confirmPaymentMethodLabel" style="font-size: 13px; font-weight: 600; color: var(--text-white);">Mpesa</span></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-color);"><span style="font-size: 13px; color: var(--text-secondary);">Payment method</span><span id="confirmPaymentMethodLabel" style="font-size: 13px; font-weight: 600; color: var(--text-white);">Binance</span></div>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-color);"><span style="font-size: 13px; color: var(--text-secondary);">Deposit to account</span><div style="display: flex; flex-direction: column; text-align: right;"><span id="confirmPaymentAccountName" style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD Account</span><span id="confirmPaymentAccountId" style="font-size: 11px; color: var(--text-secondary);">#8492019482</span></div></div>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 0;"><span style="font-size: 13px; color: var(--text-secondary);">Currency</span><span id="confirmPaymentCurrencyLabel" style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD</span></div>
       </div>
@@ -3468,63 +3322,28 @@
       </div>
     </div>
 
-    <!-- KES Deposit Amount Panel -->
-    <div id="kesDepositAmountPanel" class="right-drawer-panel hidden" style="z-index: 125;">
+    <!-- Deposit Amount Panel -->
+    <div id="depositAmountPanel" class="right-drawer-panel hidden" style="z-index: 125;">
       <div class="drawer-top-header" style="margin-bottom: 12px;">
-        <h3 style="font-size: 16px;"><i class="fa-solid fa-chevron-left" id="backFromKesDepositAmount" style="cursor: pointer; font-size: 14px; margin-right: 4px;"></i> Deposit amount</h3>
+        <h3 style="font-size: 16px;"><i class="fa-solid fa-chevron-left" id="backFromDepositAmount" style="cursor: pointer; font-size: 14px; margin-right: 4px;"></i> Deposit amount</h3>
       </div>
-      <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;" id="depositAmountMinLabel">Deposit amount (Min KES 675)</div>
+      <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;" id="depositAmountMinLabel">Deposit amount (Min $5)</div>
       <div style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 12px; padding: 10px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px; font-weight: 700; color: var(--text-white);" id="amountCurrencyPrefix">KES</span>
-        <input type="number" id="customKesInput" value="6750" min="675" style="background: transparent; border: none; font-size: 18px; font-weight: 700; color: var(--text-white); width: 100%; outline: none;" />
+        <span style="font-size: 18px; font-weight: 700; color: var(--text-white);" id="amountCurrencyPrefix">$</span>
+        <input type="number" id="customAmountInput" value="50" min="5" style="background: transparent; border: none; font-size: 18px; font-weight: 700; color: var(--text-white); width: 100%; outline: none;" />
       </div>
-      <!-- RECOMMENDATION TEXT UPDATED FOR M-PESA -->
-      <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;" id="depositAmountRecLabel">Recommended deposit for the robot is at least 50 USD</div>
-      <div class="mpesa-preset-grid" id="presetAmountsGrid">
-        <button class="mpesa-preset-btn" data-amount="675">KES 675.00</button>
-        <button class="mpesa-preset-btn" data-amount="1350">KES 1,350.00</button>
-        <button class="mpesa-preset-btn" data-amount="6750">KES 6,750.00</button>
-        <button class="mpesa-preset-btn" data-amount="13500">KES 13,500.00</button>
-        <button class="mpesa-preset-btn" data-amount="27000">KES 27,000.00</button>
-        <button class="mpesa-preset-btn" data-amount="67500">KES 67,500.00</button>
-        <button class="mpesa-preset-btn" data-amount="135000">KES 135,000.00</button>
-        <button class="mpesa-preset-btn" data-amount="675000">KES 675,000.00</button>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;" id="depositAmountRecLabel">Recommended deposit for the robot is at least $50</div>
+      <div class="preset-grid" id="presetAmountsGrid">
+        <button class="preset-btn" data-amount="5">$5</button>
+        <button class="preset-btn" data-amount="10">$10</button>
+        <button class="preset-btn" data-amount="25">$25</button>
+        <button class="preset-btn" data-amount="50">$50</button>
+        <button class="preset-btn" data-amount="100">$100</button>
+        <button class="preset-btn" data-amount="200">$200</button>
+        <button class="preset-btn" data-amount="500">$500</button>
+        <button class="preset-btn" data-amount="1000">$1,000</button>
       </div>
-      <button class="btn-deposit-submit" id="confirmKesAmountBtn" style="margin-top: auto;">Confirm</button>
-    </div>
-
-    <!-- M-PESA STK Panel -->
-    <div id="mpesaStkPanel" class="right-drawer-panel hidden" style="z-index: 135;">
-      <div class="drawer-top-header" style="margin-bottom: 12px;">
-        <h3 style="font-size: 16px;"><i class="fa-solid fa-chevron-left" id="backFromMpesaStk" style="cursor: pointer; font-size: 14px; margin-right: 4px;"></i> Deposit</h3>
-      </div>
-      <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">M-PESA STK is used for your Real KES account.</div>
-      <div class="deposit-sub-title">Deposit amount</div>
-      <div style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px;">
-        <span style="font-size: 20px; font-weight: 700; color: var(--text-white);" id="mpesaStkAmount">KES 6,750.00</span>
-      </div>
-      <div class="mpesa-method-label">
-        <div class="icon"><img src="mpesa.png" alt="M-PESA"></div>
-        <div>
-          <div class="label">M-PESA STK Push</div>
-          <div class="sub-label">Payment method</div>
-        </div>
-      </div>
-      <div class="deposit-sub-title">M-PESA phone number</div>
-      <div class="mpesa-phone-input">
-        <span class="prefix">+254</span>
-        <input type="text" id="mpesaPhoneInput" placeholder="700 000 000" maxlength="9" autocomplete="off" />
-      </div>
-      <button class="btn-deposit-submit" id="submitMpesaStkBtn">Start secure deposit</button>
-
-      <!-- STK Status Container -->
-      <div class="stk-status-container" id="stkStatusContainer">
-        <div class="stk-icon pending" id="stkStatusIcon"><i class="fa-solid fa-spinner fa-spin"></i></div>
-        <div class="stk-title" id="stkStatusTitle">Sending prompt...</div>
-        <div class="stk-sub" id="stkStatusSub">Please check your phone</div>
-        <div class="stk-detail" id="stkStatusDetail"></div>
-        <div class="stk-reference" id="stkStatusReference"></div>
-      </div>
+      <button class="btn-deposit-submit" id="confirmAmountBtn" style="margin-top: auto;">Confirm</button>
     </div>
 
     <!-- Deposit Account Choice Panel -->
@@ -3533,24 +3352,14 @@
         <h3><i class="fa-solid fa-chevron-left" id="backFromDepositAccountChoice" style="cursor: pointer; font-size: 16px; margin-right: 4px;"></i> Choose real account</h3>
       </div>
       <div class="acc-selection-list">
-        <!-- DEPOSIT LIVE BALANCE FIX START -->
-        <!-- Dynamic Real USD Account Option -->
-        <div class="deposit-acc-option" data-accname="USD Account" data-accid="USD Account #8492019482" data-currency="USD" data-account-key="real-usd" style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
+        <div class="deposit-acc-option" data-accname="USD Account" data-accbal="USD 0.00" data-accid="USD Account #8492019482" data-currency="USD" style="background-color: var(--bg-card); border: 2px solid var(--btn-primary); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
           <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="logo.png" alt="USD" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD Account</span>
-            <span style="font-size: 14px; font-weight: 700; color: var(--text-white);" id="depositUsdBalanceDisplay">USD 0.00</span>
-          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USD Account</span><span style="font-size: 14px; font-weight: 700; color: var(--text-white);">USD 0.00</span></div>
         </div>
-        <!-- Dynamic Real USDT Account Option -->
-        <div class="deposit-acc-option" data-accname="USDT Account" data-accid="USDT Account #2940306875" data-currency="USDT" data-account-key="real-usdt" style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
+        <div class="deposit-acc-option" data-accname="USDT Account" data-accbal="USDT 0.00" data-accid="USDT Account #2940306875" data-currency="USDT" style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 60px; padding: 12px 20px 12px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;">
           <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-hover);"><img src="trn.jpeg" alt="USDT" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USDT Account</span>
-            <span style="font-size: 14px; font-weight: 700; color: var(--text-white);" id="depositUsdtBalanceDisplay">USDT 0.00</span>
-          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600; color: var(--text-white);">USDT Account</span><span style="font-size: 14px; font-weight: 700; color: var(--text-white);">USDT 0.00</span></div>
         </div>
-        <!-- DEPOSIT LIVE BALANCE FIX END -->
       </div>
     </div>
 
@@ -3561,13 +3370,9 @@
       </div>
       <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 0.5px;">RECOMMENDED & CRYPTO <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--warning); font-size: 10px;"></i></div>
       <div class="acc-selection-list">
-        <div class="payment-method-option acc-select-card active" data-method="Mpesa" data-logo="mpesa.png">
-          <div class="acc-card-icon" style="background: var(--bg-hover); color: var(--btn-danger); overflow: hidden;"><img src="mpesa.png" alt="Mpesa" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div class="acc-card-details"><span class="acc-card-type" style="color: var(--text-white); font-weight: 700;">Mpesa</span></div>
-        </div>
-        <div class="payment-method-option acc-select-card" data-method="Binance" data-logo="binance.png">
+        <div class="payment-method-option acc-select-card active" data-method="Binance" data-logo="binance.png">
           <div class="acc-card-icon" style="background: var(--bg-hover); color: #f3ba2f; overflow: hidden;"><img src="binance.png" alt="Binance" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
-          <div class="acc-card-details"><span class="acc-card-type">Binance</span></div>
+          <div class="acc-card-details"><span class="acc-card-type" style="color: var(--text-white); font-weight: 700;">Binance</span></div>
         </div>
         <div class="payment-method-option acc-select-card" data-method="Bybit" data-logo="bybit.png">
           <div class="acc-card-icon" style="background: var(--bg-hover); color: var(--btn-primary); overflow: hidden;"><img src="bybit.png" alt="Bybit" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
@@ -3576,6 +3381,10 @@
         <div class="payment-method-option acc-select-card" data-method="OKX" data-logo="okx.png">
           <div class="acc-card-icon" style="background: var(--bg-hover); color: #0091ff; overflow: hidden;"><img src="okx.png" alt="OKX" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
           <div class="acc-card-details"><span class="acc-card-type">OKX</span></div>
+        </div>
+        <div class="payment-method-option acc-select-card" data-method="TRON" data-logo="trn.png">
+          <div class="acc-card-icon" style="background: var(--bg-hover); color: #ef4444; overflow: hidden;"><img src="trn.png" alt="TRON" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>
+          <div class="acc-card-details"><span class="acc-card-type">TRON</span></div>
         </div>
       </div>
     </div>
@@ -3593,12 +3402,12 @@
         </div>
       </div>
       <div class="usdt-wallet-box">
-        <div class="label">USDT DEPOSIT WALLET</div>
-        <div class="label" style="font-size: 11px; color: var(--warning); margin-top: 2px;">Send exactly <span id="usdtAmountDisplay">$50.00</span></div>
+        <div class="label">DEPOSIT WALLET</div>
+        <div class="label" style="font-size: 11px; color: var(--warning); margin-top: 2px;">Send exactly <span id="usdtAmountDisplay">Enter an amount</span></div>
         <div style="font-size: 11px; color: var(--text-secondary); margin: 6px 0 10px 0;">Send the exact amount to the wallet below. Your deposit will be credited after manual administrator approval.</div>
         <div class="label">WALLET ADDRESS</div>
         <div class="address-row">
-          <span class="address" id="usdtWalletAddress">TYP4ap9SbPZdZTwKbNA9euBsrgPC7ugdDK</span>
+          <span class="address" id="usdtWalletAddress">TWJFmRy8Z5scFMyxVxPwNR8yaSB63uZqHL</span>
           <button class="copy-btn" id="copyWalletAddress"><i class="fa-regular fa-copy"></i> Copy</button>
         </div>
       </div>
@@ -3607,7 +3416,7 @@
         <span>USDT</span>
         <input type="number" id="usdtAmountInput" placeholder="Enter amount" min="5" step="1" value="50" />
       </div>
-      <div class="deposit-sub-title">USDT transaction hash</div>
+      <div class="deposit-sub-title">Transaction hash</div>
       <div class="usdt-hash-input">
         <input type="text" id="usdtHashInput" placeholder="Enter transaction hash (optional)" />
       </div>
@@ -3720,7 +3529,7 @@
           <i class="fa-solid fa-chevron-down" style="color: var(--text-secondary); font-size: 12px;"></i>
         </div>
       </div>
-      <div style="text-align: center; margin: 2px 0 10px 0;"><button id="swapAccountsBtn" style="background: var(--bg-hover); border: 1px solid var(--border-light); border-radius: 50%; width: 36px; height: 36px; color: var(--btn-primary); cursor: pointer;"><i class="fa-solid fa-arrow-down-up"></i></button></div>
+      <div style="text-align: center; margin: 2px 0 10px 0;"><button id="swapAccountsBtn" style="background: var(--bg-hover); border: 1px solid var(--border-light); border-radius: 50%; width: 36px; height: 36px; color: var(--btn-primary); cursor: pointer;"><i class="fa-solid fa-arrow-up"></i><i class="fa-solid fa-arrow-down"></i></button></div>
       <div style="margin-bottom: 12px;">
         <div style="font-size: 13px; font-weight: 600; color: var(--text-white); margin-bottom: 6px;">To</div>
         <div style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;" id="toAccountTrigger">
@@ -3898,7 +3707,7 @@
 
       <div style="margin-bottom:16px;">
         <div style="font-size:14px;font-weight:600;color:var(--text-white);margin-bottom:4px;">Withdraw funds</div>
-        <div style="font-size:12px;color:var(--text-secondary);" id="withdrawalMinInfo">Minimum withdrawal: $50</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Minimum withdrawal: $50</div>
       </div>
 
       <!-- WITHDRAW ACCOUNT SELECTION PATCH START -->
@@ -3925,10 +3734,10 @@
         <div style="display:flex; align-items:center; justify-content:space-between;">
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:32px; height:32px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--bg-hover);">
-              <img src="mpesa.png" alt="M-PESA" id="withdrawMethodIcon" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+              <img src="binance.png" alt="Binance" id="withdrawMethodIcon" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
             </div>
             <div>
-              <div style="font-size:14px; font-weight:600; color:var(--text-white);" id="withdrawMethodName">M-PESA</div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-white);" id="withdrawMethodName">Binance</div>
             </div>
           </div>
           <i class="fa-solid fa-chevron-right" style="color:var(--text-secondary); font-size:12px;"></i>
@@ -3936,10 +3745,9 @@
       </div>
 
       <div id="withdrawDetailsContainer">
-        <div class="deposit-sub-title">M-PESA phone number</div>
-        <div class="mpesa-phone-input" style="margin-bottom:16px;">
-          <span class="prefix">+254</span>
-          <input type="text" id="withdrawPhoneInput" placeholder="700 000 000" maxlength="9" autocomplete="off" style="background:transparent;border:none;font-size:16px;font-weight:600;color:var(--text-white);width:100%;outline:none;letter-spacing:1px;font-family:monospace;">
+        <div class="deposit-sub-title">Binance wallet address</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:12px 16px;margin-bottom:16px;">
+          <input type="text" id="withdrawAddressInput" placeholder="Enter your Binance address" style="background:transparent;border:none;font-size:14px;color:var(--text-white);width:100%;outline:none;">
         </div>
       </div>
 
@@ -3958,7 +3766,7 @@
       </div>
 
       <button class="btn-deposit-submit" id="submitWithdrawBtn" style="margin-top:4px;">Submit withdrawal</button>
-      <div style="font-size:11px;color:var(--text-secondary);text-align:center;margin-top:12px;line-height:1.5;">Withdrawals are processed within 24 hours.<br><span id="withdrawalMinFooter">Minimum withdrawal: $50</span></div>
+      <div style="font-size:11px;color:var(--text-secondary);text-align:center;margin-top:12px;line-height:1.5;">Withdrawals are processed within 24 hours.<br>Minimum withdrawal: $50</div>
     </div>
 
     <!-- Withdraw Payment Method Panel -->
@@ -3970,21 +3778,12 @@
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:12px;letter-spacing:0.5px;">SELECT WITHDRAWAL METHOD</div>
       <div class="acc-selection-list">
-        <div class="withdraw-method-option acc-select-card active" data-method="Mpesa" data-logo="mpesa.png">
-          <div class="acc-card-icon" style="background:var(--bg-hover); overflow:hidden;">
-            <img src="mpesa.png" alt="Mpesa" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
-          </div>
-          <div class="acc-card-details">
-            <span class="acc-card-type" style="color:var(--text-white); font-weight:700;">M-PESA</span>
-            <span style="font-size:11px; color:var(--text-secondary);">Mobile money</span>
-          </div>
-        </div>
-        <div class="withdraw-method-option acc-select-card" data-method="Binance" data-logo="binance.png">
+        <div class="withdraw-method-option acc-select-card active" data-method="Binance" data-logo="binance.png">
           <div class="acc-card-icon" style="background:var(--bg-hover); overflow:hidden;">
             <img src="binance.png" alt="Binance" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
           </div>
           <div class="acc-card-details">
-            <span class="acc-card-type">Binance</span>
+            <span class="acc-card-type" style="color:var(--text-white); font-weight:700;">Binance</span>
             <span style="font-size:11px; color:var(--text-secondary);">Cryptocurrency</span>
           </div>
         </div>
@@ -4003,6 +3802,15 @@
           </div>
           <div class="acc-card-details">
             <span class="acc-card-type">OKX</span>
+            <span style="font-size:11px; color:var(--text-secondary);">Cryptocurrency</span>
+          </div>
+        </div>
+        <div class="withdraw-method-option acc-select-card" data-method="TRON" data-logo="trn.png">
+          <div class="acc-card-icon" style="background:var(--bg-hover); overflow:hidden;">
+            <img src="trn.png" alt="TRON" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+          </div>
+          <div class="acc-card-details">
+            <span class="acc-card-type">TRON</span>
             <span style="font-size:11px; color:var(--text-secondary);">Cryptocurrency</span>
           </div>
         </div>
@@ -4058,8 +3866,8 @@
     let activeTrades = [];
     let closedTrades = [];
     let isFirstLoad = true;
-    let selectedPaymentMethodForDeposit = 'Mpesa';
-    let currentSelectedMethod = 'Mpesa';
+    let selectedPaymentMethodForDeposit = 'Binance';
+    let currentSelectedMethod = 'Binance';
     let copyTradingId = '';
     let transactions = [];
     let selectedTransactionTab = 'all';
@@ -4122,10 +3930,6 @@
         return { success: false, error: 'Could not connect to Telegram server' };
       }
     }
-
-    // STK Push state
-    let stkPollingInterval = null;
-    let stkCheckoutRequestId = null;
 
     const accountDisplayMap = {
       'demo': { name: 'Demo account', icon: 'logo.jpg', currency: 'USD', short: 'Demo' },
@@ -4378,7 +4182,7 @@
       let creditedAny = false;
       for (const tx of transactionsList) {
         const isCrypto = tx.type === 'deposit' &&
-          ['Binance', 'Bybit', 'OKX'].includes(tx.paymentMethod);
+          ['Binance', 'Bybit', 'OKX', 'TRON'].includes(tx.paymentMethod);
         if (!isCrypto) continue;
 
         const status = (tx.status || '').toLowerCase();
@@ -4882,42 +4686,7 @@
         const currency = t.currency || 'USD';
         const status = t.status || 'completed';
         const method = t.method || t.paymentMethod || '—';
-
-        // M-PESA TRANSACTION MASKING FIX START - Mask phone numbers in M-PESA transactions
-        let displayAddress = t.address || '';
-        if (isWithdrawal && method && method.toLowerCase() === 'mpesa' && displayAddress) {
-          // Mask using the same format as withdrawal input: 712XXX678
-          const rawPhone = displayAddress.replace(/\D/g, '');
-          if (rawPhone.length >= 9) {
-            // Extract last 3 digits (may include country code, so we take from the end)
-            const last3 = rawPhone.slice(-3);
-            // Extract first 3 digits (from the end, take 3 before last 3)
-            const middleStart = rawPhone.length - 6;
-            const first3 = rawPhone.slice(middleStart, rawPhone.length - 3);
-            // If we have at least 6 digits, use the proper format
-            if (rawPhone.length >= 6) {
-              displayAddress = first3 + 'XXX' + last3;
-            } else {
-              // Fallback: just show partial
-              displayAddress = rawPhone.slice(0, 3) + 'XXX' + rawPhone.slice(-3);
-            }
-          }
-        }
-        // Also handle deposit M-PESA phone numbers
-        if (isDeposit && method && method.toLowerCase() === 'mpesa' && t.phoneNumber) {
-          const rawPhone = String(t.phoneNumber).replace(/\D/g, '');
-          if (rawPhone.length >= 9) {
-            const last3 = rawPhone.slice(-3);
-            const middleStart = rawPhone.length - 6;
-            const first3 = rawPhone.slice(middleStart, rawPhone.length - 3);
-            if (rawPhone.length >= 6) {
-              t.maskedPhone = first3 + 'XXX' + last3;
-            } else {
-              t.maskedPhone = rawPhone.slice(0, 3) + 'XXX' + rawPhone.slice(-3);
-            }
-          }
-        }
-        // M-PESA TRANSACTION MASKING FIX END
+        const address = t.address || '';
 
         html += `
                     <div class="transaction-item">
@@ -4932,9 +4701,7 @@
                             </span>
                             <span class="trans-time">${date}</span>
                         </div>
-                        ${(isWithdrawal) ? '' : (displayAddress ? `<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">To: ${displayAddress}</div>` : '')}
-                        ${(isWithdrawal) ? '' : (t.maskedPhone ? `<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Phone: ${t.maskedPhone}</div>` : '')}
-                        ${(isWithdrawal) ? '' : ((!displayAddress && t.address && !isWithdrawal) ? `<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">To: ${t.address}</div>` : '')}
+                        ${(isWithdrawal) ? '' : (address ? `<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">To: ${address}</div>` : '')}
                     </div>
                 `;
       });
@@ -5177,16 +4944,12 @@
               balanceSpan.textContent = `${currency} ${(accountBalances[accType] || 0).toFixed(2)}`;
             }
           });
-          
-          // --- DEPOSIT LIVE BALANCE FIX: Update Deposit UI from Firebase balance update ---
-          updateDepositAccountUI();
-          
-          // Update withdrawal account display
-          updateWithdrawAccountUI();
-          // Update transfer UI
+          const depositBalEl = document.getElementById('depositSelectedAccountBalance');
+          if (depositBalEl) {
+            const currency = currentAccountType === 'real-usdt' ? 'USDT' : 'USD';
+            depositBalEl.textContent = `${currency} ${(accountBalances[currentAccountType] || 0).toFixed(2)}`;
+          }
           updateTransferUI();
-          // Update execution account display
-          updateExecutionAccountDisplay();
           console.log('[Real-time] Balances updated:', accountBalances);
         }
       }, (error) => {
@@ -5408,35 +5171,184 @@
       }
     }
 
-    // ====================================================================
-    // AUTHORITATIVE ACCOUNT UI SYNCHRONIZATION
-    // FIX: The selected account name, icon, and balance now always match
-    //      the currently selected account type.
-    // ====================================================================
-    function updateAccountUI(accountType) {
-      // 1. Ensure the current account type is set.
-      currentAccountType = accountType;
+    // ============================================================
+    // ACCOUNT SELECTION PERSISTENCE FIX
+    // ============================================================
+    // The account selection now persists in localStorage.
+    // The key is user-specific to avoid cross-user leakage.
+    // 
+    // When a user selects an account, it is saved to localStorage.
+    // During initialization, the persisted selection is restored 
+    // before any default (Demo) is applied.
+    // ============================================================
+    function getSelectedAccountKey() {
+      if (!currentUser) return null;
+      return `olymmatix_selectedAccount_${currentUser.uid}`;
+    }
 
-      // 2. Get the balance and currency for the account.
+    function saveSelectedAccount(accountType) {
+      if (!currentUser) return;
+      try {
+        localStorage.setItem(getSelectedAccountKey(), accountType);
+        console.log('[Account Persistence] Saved account:', accountType);
+      } catch (e) {
+        console.warn('[Account Persistence] Could not save account:', e);
+      }
+    }
+
+    function getSavedAccount() {
+      if (!currentUser) return null;
+      try {
+        return localStorage.getItem(getSelectedAccountKey());
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function clearSavedAccount() {
+      if (!currentUser) return;
+      try {
+        localStorage.removeItem(getSelectedAccountKey());
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function applySelectedAccount(accountType) {
+      if (!accountType || !accountBalances[accountType] === undefined) {
+        // Invalid account, fallback to demo
+        console.warn('[Account Persistence] Invalid account:', accountType, 'fallback to demo');
+        accountType = 'demo';
+      }
+      // Update global state
+      currentAccountType = accountType;
+      botExecutionAccount = accountType;
+      
+      // Update UI
+      updateAccountUI(accountType);
+      updateExecutionAccountDisplay();
+      
+      // Update the top-bar pill
+      const accInfo = accountDisplayMap[accountType] || accountDisplayMap['demo'];
+      currentAccTitle.textContent = accInfo.name;
+      if (topBarIcon) {
+        topBarIcon.innerHTML = `<img src="${accInfo.icon}" alt="${accInfo.name}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+      }
+      
+      // Update active card in the selection panel
+      document.querySelectorAll('.acc-select-card').forEach(card => {
+        const accType = card.getAttribute('data-account');
+        if (accType === accountType) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+      
+      console.log('[Account Persistence] Applied account:', accountType);
+    }
+
+    // ====================================================================
+    // FIX: MAIN ACCOUNT SELECTION - STAY IN PANEL (TRANSFER MODEL)
+    // ====================================================================
+    // The root cause of the bug was the `originalAccountCardHandler()` which
+    // closed the account-selection panel and navigated away. We replace the
+    // click handler for the main account-selection cards with a new one
+    // that updates the account and keeps the panel open.
+    // ====================================================================
+    function setupMainAccountSelection() {
+      const mainAccountCards = document.querySelectorAll('#accountSelectionPanel .acc-select-card');
+      
+      mainAccountCards.forEach(card => {
+        // Remove any previously attached handler (if any) to avoid conflicts.
+        card.removeEventListener('click', card._mainSelectionHandler);
+        
+        card._mainSelectionHandler = function(e) {
+          e.stopPropagation();
+          
+          // 1. Bot-running protection (preserve existing behavior)
+          if (botRunning) {
+            const notif = document.createElement('div');
+            notif.className = 'trade-notification';
+            notif.style.borderColor = 'var(--btn-danger)';
+            notif.innerHTML = `
+              <div style="font-weight: 600;">Bot Running</div>
+              <div style="font-size:13px; color:var(--text-secondary);">Please stop the robot first</div>
+            `;
+            document.body.appendChild(notif);
+            setTimeout(() => {
+              if (notif.parentNode) {
+                notif.style.opacity = '0';
+                notif.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                  if (notif.parentNode) notif.remove();
+                }, 500);
+              }
+            }, 3000);
+            return;
+          }
+          
+          // 2. Get account data
+          const accountType = this.getAttribute('data-account');
+          if (!accountType) return;
+          
+          // 3. Validate account
+          if (accountBalances[accountType] === undefined) {
+            console.warn('[Account Selection] Invalid account:', accountType);
+            return;
+          }
+          
+          // 4. Save the selected account (persistence)
+          saveSelectedAccount(accountType);
+          
+          // 5. Apply the selected account (updates UI, top-bar, etc.)
+          applySelectedAccount(accountType);
+          
+          // 6. Update inline execution account list if visible
+          updateInlineAccountBalances();
+          
+          // 7. Update the main account cards (active state)
+          // applySelectedAccount already does this, but we ensure it's done.
+          // We also need to ensure the card itself stays active visually.
+          mainAccountCards.forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+          
+          // 8. DO NOT NAVIGATE: The panel stays open.
+          // The account-selection panel remains visible.
+          // No history.back(), no closeAllPanels(), no openPanel(), etc.
+          console.log('[Account Selection] Account changed to:', accountType, ' (panel remains open)');
+        };
+        
+        card.addEventListener('click', card._mainSelectionHandler);
+      });
+    }
+
+    // --- Override the generic account card handler used elsewhere ---
+    // The original code attached a persistence handler to all .acc-select-card
+    // elements. That handler called originalAccountCardHandler which caused navigation.
+    // We prevent that by ensuring the main account selection panel uses our new handler.
+    // We'll also remove the old persistence handler from the main panel cards.
+    // However, we must preserve the behavior for other panels (like inline execution,
+    // deposit, withdrawal, transfer, etc.). They have their own specific handlers.
+    // We'll keep the generic handler for other contexts, but we'll ensure it doesn't
+    // interfere with the main account selection panel.
+    // The easiest way is to remove the old handler from the main panel cards.
+    // In the initialization, we'll remove any existing listeners and attach our new one.
+
+    // ============================================================
+    // END ACCOUNT SELECTION PERSISTENCE FIX
+    // ============================================================
+
+    function updateAccountUI(accountType) {
+      currentAccountType = accountType;
       const balance = accountBalances[accountType] || 0;
       const currency = accountType === 'real-usdt' ? 'USDT' : 'USD';
       const displayBalance = `${currency} ${balance.toFixed(2)}`;
-
-      // 3. Update the Market top-bar account title, icon, and balance.
-      const accountInfo = accountDisplayMap[accountType] || accountDisplayMap['demo'];
-      if (currentAccTitle) currentAccTitle.textContent = accountInfo.name;
-      if (topBarIcon) {
-        topBarIcon.innerHTML = `<img src="${accountInfo.icon}" alt="${accountInfo.name}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-      }
       if (currentAccVal) currentAccVal.textContent = displayBalance;
-
-      // 4. Update the Account left panel balance.
       if (accountBalanceDisplay) accountBalanceDisplay.textContent = displayBalance;
 
-      // 5. Update execution account display (robot settings).
       updateExecutionAccountDisplay();
 
-      // 6. Update account selection cards.
       const cards = document.querySelectorAll('.acc-select-card');
       cards.forEach(card => {
         const accType = card.getAttribute('data-account');
@@ -5445,11 +5357,8 @@
         const cardBalance = accountBalances[accType] || 0;
         if (balanceSpan) balanceSpan.textContent = `${cardCurrency} ${cardBalance.toFixed(2)}`;
         card.setAttribute('data-balance', `${cardCurrency} ${cardBalance.toFixed(2)}`);
-        if (accType === accountType) {
-          card.classList.add('active');
-        } else {
-          card.classList.remove('active');
-        }
+        if (accType === accountType) card.classList.add('active');
+        else card.classList.remove('active');
         if (botRunning) {
           card.classList.add('disabled');
         } else {
@@ -5457,23 +5366,8 @@
         }
       });
 
-      // 7. Update verification status.
       updateVerificationStatusUI();
-
-      // 8. Update the deposit form account display if it is visible.
-      // DEPOSIT LIVE BALANCE FIX: Use the dedicated function.
-      updateDepositAccountUI();
-
-      // 9. Update the transfer UI.
-      updateTransferUI();
-
-      // 10. Update withdrawal account selection UI if present.
-      updateWithdrawAccountUI();
     }
-
-    // ====================================================================
-    // END ACCOUNT UI FIX
-    // ====================================================================
 
     function updateExecutionAccountDisplay() {
       const accountInfo = accountDisplayMap[botExecutionAccount] || accountDisplayMap['demo'];
@@ -5926,23 +5820,15 @@
             localStorage.removeItem('olymmatix_current_panel');
 
             // ============================================================
-            // SELECTED ACCOUNT PERSISTENCE - RESTORE
+            // ACCOUNT SELECTION PERSISTENCE - RESTORE SAVED ACCOUNT
             // ============================================================
-            const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
-            const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = 'demo';
-            if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
-              accountToRestore = savedAccount;
-              console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
-            } else {
-              console.log('[Account Persist] No valid saved account found, using demo fallback.');
-            }
-            // 1. Set the internal state.
-            currentAccountType = accountToRestore;
-            botExecutionAccount = accountToRestore;
-            // 2. Call the authoritative UI sync function.
-            updateAccountUI(accountToRestore);
-            // --------------------------------------------
+            // After balances are loaded, restore the saved account.
+            // This is the core fix: it ensures the user's selection persists.
+            initializeAccountPersistence();
+
+            // Also update the top bar with the selected account info.
+            // This is already handled by applySelectedAccount.
+            // ============================================================
 
             isFirstLoad = false;
             hideFullPageLoader();
@@ -6018,115 +5904,6 @@
             // REFERRAL LINK FIX PATCH END
             // ====================================================================
 
-            // ====================================================================
-            // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
-            // ====================================================================
-            // --- USER STAKE / TRADE LIMITS ---
-            if (currentUser) {
-              const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
-              onValue(tradeControlRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && typeof data === 'object') {
-                  if (typeof data.minStake === 'number' && data.minStake > 0) {
-                    window.currentMinStake = data.minStake;
-                  } else {
-                    window.currentMinStake = 5; // safe fallback
-                  }
-                  if (typeof data.maxStake === 'number' && data.maxStake > 0) {
-                    window.currentMaxStake = data.maxStake;
-                  } else {
-                    window.currentMaxStake = 1000; // safe fallback
-                  }
-                  // Ensure min <= max
-                  if (window.currentMinStake > window.currentMaxStake) {
-                    console.warn('[Dynamic Limits] minStake > maxStake, adjusting.');
-                    const temp = window.currentMinStake;
-                    window.currentMinStake = window.currentMaxStake;
-                    window.currentMaxStake = temp;
-                  }
-                  console.log('[Dynamic Limits] Stake limits updated: min=', window.currentMinStake, 'max=', window.currentMaxStake);
-                  // Update manual stake input and bot stake input accordingly
-                  updateStakeLimitsUI();
-                }
-              }, (error) => {
-                console.error('[Dynamic Limits] Error listening to tradeControl:', error);
-                // Fallback values
-                window.currentMinStake = 5;
-                window.currentMaxStake = 1000;
-              });
-            }
-
-            // Deposit minimum listener
-            const depositLimitsRef = ref(db, 'settings/depositLimits');
-            onValue(depositLimitsRef, (snapshot) => {
-              const data = snapshot.val();
-              if (data && typeof data === 'object') {
-                if (typeof data.minDeposit === 'number' && data.minDeposit > 0) {
-                  window.minimumDeposit = data.minDeposit;
-                } else {
-                  window.minimumDeposit = 5;
-                }
-                if (typeof data.maxDeposit === 'number' && data.maxDeposit > 0) {
-                  window.maximumDeposit = data.maxDeposit;
-                } else {
-                  window.maximumDeposit = 10000;
-                }
-                // Ensure min <= max
-                if (window.minimumDeposit > window.maximumDeposit) {
-                  console.warn('[Dynamic Limits] minDeposit > maxDeposit, adjusting.');
-                  const temp = window.minimumDeposit;
-                  window.minimumDeposit = window.maximumDeposit;
-                  window.maximumDeposit = temp;
-                }
-                console.log('[Dynamic Limits] Deposit limits updated: min=', window.minimumDeposit, 'max=', window.maximumDeposit);
-                // Update deposit UI
-                updateDepositMinUI(window.minimumDeposit);
-                updateKesDepositMinLabel(window.minimumDeposit);
-                // Update max deposit UI if needed (e.g., in USDT deposit)
-                updateUsdtDepositMaxUI(window.maximumDeposit);
-              }
-            }, (error) => {
-              console.error('[Dynamic Limits] Error listening to depositLimits:', error);
-              window.minimumDeposit = 5;
-              window.maximumDeposit = 10000;
-            });
-
-            // Withdrawal minimum listener
-            const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
-            onValue(withdrawalLimitsRef, (snapshot) => {
-              const data = snapshot.val();
-              if (data && typeof data === 'object') {
-                if (typeof data.minWithdrawal === 'number' && data.minWithdrawal > 0) {
-                  window.minimumWithdrawal = data.minWithdrawal;
-                } else {
-                  window.minimumWithdrawal = 50;
-                }
-                if (typeof data.maxWithdrawal === 'number' && data.maxWithdrawal > 0) {
-                  window.maximumWithdrawal = data.maxWithdrawal;
-                } else {
-                  window.maximumWithdrawal = 10000;
-                }
-                // Ensure min <= max
-                if (window.minimumWithdrawal > window.maximumWithdrawal) {
-                  console.warn('[Dynamic Limits] minWithdrawal > maxWithdrawal, adjusting.');
-                  const temp = window.minimumWithdrawal;
-                  window.minimumWithdrawal = window.maximumWithdrawal;
-                  window.maximumWithdrawal = temp;
-                }
-                console.log('[Dynamic Limits] Withdrawal limits updated: min=', window.minimumWithdrawal, 'max=', window.maximumWithdrawal);
-                updateWithdrawalMinUI(window.minimumWithdrawal);
-                updateWithdrawalMinFooterUI(window.minimumWithdrawal);
-                updateWithdrawalMaxUI(window.maximumWithdrawal);
-              }
-            }, (error) => {
-              console.error('[Dynamic Limits] Error listening to withdrawalLimits:', error);
-              window.minimumWithdrawal = 50;
-              window.maximumWithdrawal = 10000;
-            });
-            // ====================================================================
-            // DYNAMIC LIMITS PATCH END
-            // ====================================================================
-
           } else {
             const newCopyId = generateCopyTradingId();
             accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
@@ -6187,23 +5964,12 @@
             localStorage.removeItem('olymmatix_current_panel');
 
             // ============================================================
-            // SELECTED ACCOUNT PERSISTENCE - RESTORE
+            // ACCOUNT SELECTION PERSISTENCE - RESTORE SAVED ACCOUNT
             // ============================================================
-            const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
-            const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = 'demo';
-            if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
-              accountToRestore = savedAccount;
-              console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
-            } else {
-              console.log('[Account Persist] No valid saved account found, using demo fallback.');
-            }
-            // 1. Set the internal state.
-            currentAccountType = accountToRestore;
-            botExecutionAccount = accountToRestore;
-            // 2. Call the authoritative UI sync function.
-            updateAccountUI(accountToRestore);
-            // --------------------------------------------
+            // Even for new users, we should ensure the account persistence
+            // is initialized.
+            initializeAccountPersistence();
+            // ============================================================
 
             isFirstLoad = false;
             hideFullPageLoader();
@@ -6244,108 +6010,6 @@
             // REFERRAL LINK FIX PATCH END
             // ====================================================================
 
-            // ====================================================================
-            // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
-            // ====================================================================
-            // --- USER STAKE / TRADE LIMITS ---
-            if (currentUser) {
-              const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
-              onValue(tradeControlRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && typeof data === 'object') {
-                  if (typeof data.minStake === 'number' && data.minStake > 0) {
-                    window.currentMinStake = data.minStake;
-                  } else {
-                    window.currentMinStake = 5;
-                  }
-                  if (typeof data.maxStake === 'number' && data.maxStake > 0) {
-                    window.currentMaxStake = data.maxStake;
-                  } else {
-                    window.currentMaxStake = 1000;
-                  }
-                  if (window.currentMinStake > window.currentMaxStake) {
-                    console.warn('[Dynamic Limits] minStake > maxStake, adjusting.');
-                    const temp = window.currentMinStake;
-                    window.currentMinStake = window.currentMaxStake;
-                    window.currentMaxStake = temp;
-                  }
-                  console.log('[Dynamic Limits] Stake limits updated: min=', window.currentMinStake, 'max=', window.currentMaxStake);
-                  updateStakeLimitsUI();
-                }
-              }, (error) => {
-                console.error('[Dynamic Limits] Error listening to tradeControl:', error);
-                window.currentMinStake = 5;
-                window.currentMaxStake = 1000;
-              });
-            }
-
-            // Deposit minimum listener
-            const depositLimitsRef = ref(db, 'settings/depositLimits');
-            onValue(depositLimitsRef, (snapshot) => {
-              const data = snapshot.val();
-              if (data && typeof data === 'object') {
-                if (typeof data.minDeposit === 'number' && data.minDeposit > 0) {
-                  window.minimumDeposit = data.minDeposit;
-                } else {
-                  window.minimumDeposit = 5;
-                }
-                if (typeof data.maxDeposit === 'number' && data.maxDeposit > 0) {
-                  window.maximumDeposit = data.maxDeposit;
-                } else {
-                  window.maximumDeposit = 10000;
-                }
-                if (window.minimumDeposit > window.maximumDeposit) {
-                  console.warn('[Dynamic Limits] minDeposit > maxDeposit, adjusting.');
-                  const temp = window.minimumDeposit;
-                  window.minimumDeposit = window.maximumDeposit;
-                  window.maximumDeposit = temp;
-                }
-                console.log('[Dynamic Limits] Deposit limits updated: min=', window.minimumDeposit, 'max=', window.maximumDeposit);
-                updateDepositMinUI(window.minimumDeposit);
-                updateKesDepositMinLabel(window.minimumDeposit);
-                updateUsdtDepositMaxUI(window.maximumDeposit);
-              }
-            }, (error) => {
-              console.error('[Dynamic Limits] Error listening to depositLimits:', error);
-              window.minimumDeposit = 5;
-              window.maximumDeposit = 10000;
-            });
-
-            // Withdrawal minimum listener
-            const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
-            onValue(withdrawalLimitsRef, (snapshot) => {
-              const data = snapshot.val();
-              if (data && typeof data === 'object') {
-                if (typeof data.minWithdrawal === 'number' && data.minWithdrawal > 0) {
-                  window.minimumWithdrawal = data.minWithdrawal;
-                } else {
-                  window.minimumWithdrawal = 50;
-                }
-                if (typeof data.maxWithdrawal === 'number' && data.maxWithdrawal > 0) {
-                  window.maximumWithdrawal = data.maxWithdrawal;
-                } else {
-                  window.maximumWithdrawal = 10000;
-                }
-                if (window.minimumWithdrawal > window.maximumWithdrawal) {
-                  console.warn('[Dynamic Limits] minWithdrawal > maxWithdrawal, adjusting.');
-                  const temp = window.minimumWithdrawal;
-                  window.minimumWithdrawal = window.maximumWithdrawal;
-                  window.maximumWithdrawal = temp;
-                }
-                console.log('[Dynamic Limits] Withdrawal limits updated: min=', window.minimumWithdrawal, 'max=', window.maximumWithdrawal);
-                updateWithdrawalMinUI(window.minimumWithdrawal);
-                updateWithdrawalMinFooterUI(window.minimumWithdrawal);
-                updateWithdrawalMaxUI(window.maximumWithdrawal);
-              }
-            }, (error) => {
-              console.error('[Dynamic Limits] Error listening to withdrawalLimits:', error);
-              window.minimumWithdrawal = 50;
-              window.maximumWithdrawal = 10000;
-            });
-            // ====================================================================
-            // DYNAMIC LIMITS PATCH END
-            // ====================================================================
-
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -6370,23 +6034,10 @@
           localStorage.removeItem('olymmatix_current_panel');
 
           // ============================================================
-          // SELECTED ACCOUNT PERSISTENCE - RESTORE
+          // ACCOUNT SELECTION PERSISTENCE - RESTORE SAVED ACCOUNT
           // ============================================================
-          const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
-          const savedAccount = localStorage.getItem(savedAccountKey);
-          let accountToRestore = 'demo';
-          if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
-            accountToRestore = savedAccount;
-            console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
-          } else {
-            console.log('[Account Persist] No valid saved account found, using demo fallback.');
-          }
-          // 1. Set the internal state.
-          currentAccountType = accountToRestore;
-          botExecutionAccount = accountToRestore;
-          // 2. Call the authoritative UI sync function.
-          updateAccountUI(accountToRestore);
-          // --------------------------------------------
+          initializeAccountPersistence();
+          // ============================================================
 
           isFirstLoad = false;
           hideFullPageLoader();
@@ -6425,108 +6076,6 @@
           }
           // ====================================================================
           // REFERRAL LINK FIX PATCH END
-          // ====================================================================
-
-          // ====================================================================
-          // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
-          // ====================================================================
-          // --- USER STAKE / TRADE LIMITS ---
-          if (currentUser) {
-            const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
-            onValue(tradeControlRef, (snapshot) => {
-              const data = snapshot.val();
-              if (data && typeof data === 'object') {
-                if (typeof data.minStake === 'number' && data.minStake > 0) {
-                  window.currentMinStake = data.minStake;
-                } else {
-                  window.currentMinStake = 5;
-                }
-                if (typeof data.maxStake === 'number' && data.maxStake > 0) {
-                  window.currentMaxStake = data.maxStake;
-                } else {
-                  window.currentMaxStake = 1000;
-                }
-                if (window.currentMinStake > window.currentMaxStake) {
-                  console.warn('[Dynamic Limits] minStake > maxStake, adjusting.');
-                  const temp = window.currentMinStake;
-                  window.currentMinStake = window.currentMaxStake;
-                  window.currentMaxStake = temp;
-                }
-                console.log('[Dynamic Limits] Stake limits updated: min=', window.currentMinStake, 'max=', window.currentMaxStake);
-                updateStakeLimitsUI();
-              }
-            }, (error) => {
-              console.error('[Dynamic Limits] Error listening to tradeControl:', error);
-              window.currentMinStake = 5;
-              window.currentMaxStake = 1000;
-            });
-          }
-
-          // Deposit minimum listener
-          const depositLimitsRef = ref(db, 'settings/depositLimits');
-          onValue(depositLimitsRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && typeof data === 'object') {
-              if (typeof data.minDeposit === 'number' && data.minDeposit > 0) {
-                window.minimumDeposit = data.minDeposit;
-              } else {
-                window.minimumDeposit = 5;
-              }
-              if (typeof data.maxDeposit === 'number' && data.maxDeposit > 0) {
-                window.maximumDeposit = data.maxDeposit;
-              } else {
-                window.maximumDeposit = 10000;
-              }
-              if (window.minimumDeposit > window.maximumDeposit) {
-                console.warn('[Dynamic Limits] minDeposit > maxDeposit, adjusting.');
-                const temp = window.minimumDeposit;
-                window.minimumDeposit = window.maximumDeposit;
-                window.maximumDeposit = temp;
-              }
-              console.log('[Dynamic Limits] Deposit limits updated: min=', window.minimumDeposit, 'max=', window.maximumDeposit);
-              updateDepositMinUI(window.minimumDeposit);
-              updateKesDepositMinLabel(window.minimumDeposit);
-              updateUsdtDepositMaxUI(window.maximumDeposit);
-            }
-          }, (error) => {
-            console.error('[Dynamic Limits] Error listening to depositLimits:', error);
-            window.minimumDeposit = 5;
-            window.maximumDeposit = 10000;
-          });
-
-          // Withdrawal minimum listener
-          const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
-          onValue(withdrawalLimitsRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && typeof data === 'object') {
-              if (typeof data.minWithdrawal === 'number' && data.minWithdrawal > 0) {
-                window.minimumWithdrawal = data.minWithdrawal;
-              } else {
-                window.minimumWithdrawal = 50;
-              }
-              if (typeof data.maxWithdrawal === 'number' && data.maxWithdrawal > 0) {
-                window.maximumWithdrawal = data.maxWithdrawal;
-              } else {
-                window.maximumWithdrawal = 10000;
-              }
-              if (window.minimumWithdrawal > window.maximumWithdrawal) {
-                console.warn('[Dynamic Limits] minWithdrawal > maxWithdrawal, adjusting.');
-                const temp = window.minimumWithdrawal;
-                window.minimumWithdrawal = window.maximumWithdrawal;
-                window.maximumWithdrawal = temp;
-              }
-              console.log('[Dynamic Limits] Withdrawal limits updated: min=', window.minimumWithdrawal, 'max=', window.maximumWithdrawal);
-              updateWithdrawalMinUI(window.minimumWithdrawal);
-              updateWithdrawalMinFooterUI(window.minimumWithdrawal);
-              updateWithdrawalMaxUI(window.maximumWithdrawal);
-            }
-          }, (error) => {
-            console.error('[Dynamic Limits] Error listening to withdrawalLimits:', error);
-            window.minimumWithdrawal = 50;
-            window.maximumWithdrawal = 10000;
-          });
-          // ====================================================================
-          // DYNAMIC LIMITS PATCH END
           // ====================================================================
 
         }
@@ -6610,6 +6159,8 @@
             localStorage.removeItem(TRADES_STORAGE_KEY);
           } catch (e) {}
           saveBotRunningState(false);
+          // Clear account selection persistence on logout
+          clearSavedAccount();
           await signOut(auth);
           window.location.href = 'index.html';
         } catch (error) {
@@ -6751,8 +6302,7 @@
       accountActivation: document.getElementById('accountActivationPanel'),
       accountDepositForm: document.getElementById('accountDepositFormPanel'),
       confirmPayment: document.getElementById('confirmPaymentPanel'),
-      kesDepositAmount: document.getElementById('kesDepositAmountPanel'),
-      mpesaStk: document.getElementById('mpesaStkPanel'),
+      depositAmount: document.getElementById('depositAmountPanel'),
       accountSelection: document.getElementById('accountSelectionPanel'),
       depositAccountChoice: document.getElementById('depositAccountChoicePanel'),
       paymentMethodChoice: document.getElementById('paymentMethodChoicePanel'),
@@ -6872,8 +6422,7 @@
         'accountActivation': 'account',
         'accountDepositForm': 'account',
         'confirmPayment': 'account',
-        'kesDepositAmount': 'account',
-        'mpesaStk': 'account',
+        'depositAmount': 'account',
         'accountSelection': 'demoAccPill',
         'depositAccountChoice': 'account',
         'paymentMethodChoice': 'account',
@@ -7037,7 +6586,7 @@
       'closeRobotSettings', 'closeDealsPanel', 'closeSupportPanel', 'closeAccountLeftPanel',
       'closeAccountSelectionPanel', 'closeAccountActivationPanel', 'backFromProfile',
       'backFromStrategy', 'backFromAssetSelection', 'backToDepositForm', 'backToActivationStep1',
-      'backFromKesDepositAmount', 'backFromMpesaStk', 'backFromDepositAccountChoice',
+      'backFromDepositAmount', 'backFromDepositAccountChoice',
       'backFromPaymentMethodChoice', 'backFromUsdtDeposit', 'backFromIdentityVerification',
       'backFromProofOfAddress', 'backFromTransactions', 'backFromReferral', 'backFromTradeHistory',
       'backFromCopyTrading', 'backFromTransfer', 'backFromWithdrawal', 'backFromWithdrawPaymentMethod',
@@ -7063,65 +6612,6 @@
         });
       }
     });
-
-    // =============================================
-    // DEPOSIT BACK NAVIGATION FIX START
-    // Override the back button behavior for Deposit child panels
-    // These panels must ALWAYS return to Main Deposit (accountDepositForm)
-    // regardless of browser history state.
-    // =============================================
-
-    // List of Deposit child panels that should return to Main Deposit
-    const depositChildPanelIds = [
-        'backFromDepositAccountChoice',
-        'backFromPaymentMethodChoice',
-        'backFromKesDepositAmount'
-    ];
-
-    depositChildPanelIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            // Remove any existing listeners by cloning and replacing
-            const newEl = el.cloneNode(true);
-            el.parentNode.replaceChild(newEl, el);
-            
-            // Add the correct behavior: always return to Main Deposit
-            newEl.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                // Hide all Deposit child panels
-                if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
-                if (panels.paymentMethodChoice) panels.paymentMethodChoice.classList.add('hidden');
-                if (panels.kesDepositAmount) panels.kesDepositAmount.classList.add('hidden');
-                
-                // Show Main Deposit form
-                if (panels.accountDepositForm) {
-                    panels.accountDepositForm.classList.remove('hidden');
-                    if (chartOverlay) chartOverlay.classList.add('active');
-                }
-                
-                // Update the panel stack to reflect we're at Main Deposit
-                // Remove any child panels from the stack
-                const childPanels = ['depositAccountChoice', 'paymentMethodChoice', 'kesDepositAmount'];
-                currentPanelStack = currentPanelStack.filter(p => !childPanels.includes(p));
-                
-                // If Main Deposit is not in the stack, add it
-                if (!currentPanelStack.includes('accountDepositForm')) {
-                    currentPanelStack.push('accountDepositForm');
-                }
-                
-                // Update history state to match
-                history.replaceState({ 
-                    panel: 'accountDepositForm', 
-                    stack: currentPanelStack 
-                }, '', window.location.href);
-                
-                savePanelState('accountDepositForm', currentPanelStack);
-            });
-        }
-    });
-
-    // DEPOSIT BACK NAVIGATION FIX END
 
     // =============================================
     // SAVE / RESTORE PANEL STATE FOR REFRESH
@@ -7162,87 +6652,62 @@
       }
     };
 
-    // =============================================
-    // ACCOUNT SELECTION CARDS
-    // =============================================
-    const accountCards = document.querySelectorAll('.acc-select-card');
+    // ============================================================
+    // ACCOUNT SELECTION CARDS - COMPLETE REWRITE
+    // ============================================================
+    // We now replace the click handlers for the main account selection panel.
+    // This is done in the initializeAccountPersistence function.
+    // We also remove any old persistence handlers from the main panel cards.
 
-    accountCards.forEach(card => {
-      card.addEventListener('click', function(e) {
-        if (this.classList.contains('payment-method-option')) return;
-        e.stopPropagation();
+    function initializeAccountPersistence() {
+      if (!currentUser) return;
+      
+      // First, ensure the main account selection cards use our new handler.
+      setupMainAccountSelection();
+      
+      // Then, restore the saved account.
+      restorePersistedAccount();
+    }
 
-        if (botRunning) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Bot Running</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Please stop the robot first</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
+    // Override the original persistence handler setup to avoid conflicts.
+    // We'll just call our own setup.
+    const originalSetupAccountCardPersistence = setupAccountCardPersistence;
+    setupAccountCardPersistence = function() {
+      // Do nothing - we handle it in initializeAccountPersistence.
+      console.log('[Account Persistence] Using main account selection handler.');
+    };
 
-        const accountType = this.getAttribute('data-account');
-        const title = this.dataset.title || 'Account';
-        const icon = this.dataset.icon || 'logo.png';
-        currentAccTitle.textContent = title;
-        topBarIcon.innerHTML =
-          `<img src="${icon}" alt="${title}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    // The originalAccountCardHandler is no longer used for the main panel.
+    // We keep it for other contexts (if any) but it won't be called for the main panel.
+    // We'll redefine it to be a no-op for safety.
+    const originalAccountCardHandler = function(card) {
+      console.warn('[Account Persistence] Original handler called - this should not happen for main panel.');
+    };
 
-        currentAccountType = accountType;
-        botExecutionAccount = accountType;
-        // ============================================================
-        // SELECTED ACCOUNT PERSISTENCE - SAVE
-        // ============================================================
-        if (currentUser) {
-          const saveKey = `olymmatix_selected_account_${currentUser.uid}`;
-          localStorage.setItem(saveKey, accountType);
-          console.log(`[Account Persist] Saved account: ${accountType} for user ${currentUser.uid}`);
-        }
-        // ============================================================
-        updateAccountUI(accountType);
-        updateExecutionAccountDisplay();
-
-        if (panels.accountSelection) panels.accountSelection.classList.add('hidden');
-        if (chartOverlay) chartOverlay.classList.remove('active');
-
-        if (window.history.length > 1 && currentPanelStack.length > 0) {
-          window.history.back();
-        } else {
-          closeAllPanels();
-          if (buttons.market) buttons.market.classList.add('active');
-          savePanelState(ROOT_PANEL, []);
-        }
-      });
-    });
+    // ============================================================
+    // END ACCOUNT SELECTION PERSISTENCE FIX
+    // ============================================================
 
     // =============================================
-    // EXECUTION ACCOUNT CARD
+    // EXECUTION ACCOUNT CARD - INLINE SELECTOR LOGIC
     // =============================================
     const execAccountCard = document.getElementById('execAccountCard');
+    const inlineAccountsContainer = document.getElementById('inlineExecutionAccounts');
+    const execAccountArrow = document.getElementById('execAccountArrow');
+
     if (execAccountCard) {
       execAccountCard.addEventListener('click', function(e) {
         e.stopPropagation();
 
+        // Bot running protection: do nothing if bot is running.
         if (botRunning) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
           notif.style.borderColor = 'var(--btn-danger)';
           notif.innerHTML = `
-                        <div style="font-weight: 600;">Bot Running</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Please stop the robot first</div>
-                    `;
+            <div style="font-weight: 600;">Bot Running</div>
+            <div style="font-size:13px; color:var(--text-secondary);">Please stop the robot first</div>
+          `;
           document.body.appendChild(notif);
           setTimeout(() => {
             if (notif.parentNode) {
@@ -7256,19 +6721,102 @@
           return;
         }
 
-        if (panels.accountSelection.classList.contains('hidden')) {
-          openPanel('accountSelection', 'demoAccPill');
-          savePanelState('accountSelection', ['accountSelection']);
-        } else {
-          if (window.history.length > 1 && currentPanelStack.length > 0) {
-            window.history.back();
+        // Toggle the inline account list.
+        if (inlineAccountsContainer) {
+          if (inlineAccountsContainer.style.display === 'none') {
+            inlineAccountsContainer.style.display = 'block';
+            execAccountArrow.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+            // Update balances in inline list before showing.
+            updateInlineAccountBalances();
           } else {
-            closeAllPanels();
-            if (buttons.market) buttons.market.classList.add('active');
-            savePanelState(ROOT_PANEL, []);
+            inlineAccountsContainer.style.display = 'none';
+            execAccountArrow.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
           }
         }
       });
+    }
+
+    // Function to update balances inside the inline account list.
+    function updateInlineAccountBalances() {
+      const inlineCards = document.querySelectorAll('#inlineExecutionAccounts .acc-select-card');
+      inlineCards.forEach(card => {
+        const accType = card.getAttribute('data-account');
+        const balanceSpan = card.querySelector('.acc-card-balance');
+        if (balanceSpan && accountBalances[accType] !== undefined) {
+          const currency = accType === 'real-usdt' ? 'USDT' : 'USD';
+          balanceSpan.textContent = `${currency} ${accountBalances[accType].toFixed(2)}`;
+        }
+        // Highlight active selection
+        if (accType === botExecutionAccount) {
+          card.classList.add('active');
+          card.style.background = 'var(--bg-active)';
+        } else {
+          card.classList.remove('active');
+          card.style.background = 'var(--bg-card)';
+        }
+      });
+    }
+
+    // Inline account selection click handler (attached via event delegation).
+    if (inlineAccountsContainer) {
+      inlineAccountsContainer.addEventListener('click', function(e) {
+        const target = e.target.closest('.acc-select-card');
+        if (!target) return;
+        if (target.classList.contains('payment-method-option')) return;
+
+        if (botRunning) {
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--btn-danger)';
+          notif.innerHTML = `
+            <div style="font-weight: 600;">Bot Running</div>
+            <div style="font-size:13px; color:var(--text-secondary);">Please stop the robot first</div>
+          `;
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 3000);
+          return;
+        }
+
+        const accountType = target.getAttribute('data-account');
+        if (!accountType) return;
+
+        // Update the bot execution account.
+        botExecutionAccount = accountType;
+        // Update the display.
+        updateExecutionAccountDisplay();
+        // Update inline list highlight.
+        updateInlineAccountBalances();
+
+        // Close the inline list.
+        if (inlineAccountsContainer) {
+          inlineAccountsContainer.style.display = 'none';
+          execAccountArrow.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+        }
+
+        // Optionally, sync with main account if needed? Do NOT do that.
+        // currentAccountType remains unchanged.
+        console.log('[Robot] Execution account changed to:', botExecutionAccount);
+      });
+    }
+
+    // Override updateExecutionAccountDisplay to also update inline balances.
+    const originalUpdateExecDisplay = updateExecutionAccountDisplay;
+    updateExecutionAccountDisplay = function() {
+      originalUpdateExecDisplay();
+      updateInlineAccountBalances();
+    };
+
+    // Ensure inline list starts closed.
+    if (inlineAccountsContainer) {
+      inlineAccountsContainer.style.display = 'none';
     }
 
     // =============================================
@@ -7306,12 +6854,10 @@
     // =============================================
     const tradeAmountEl = document.getElementById('tradeAmount');
     let currentAmount = 5;
-    let currentMinStake = 5;
-    let currentMaxStake = 1000;
+    const MIN_AMOUNT = 5,
+      MAX_AMOUNT = 1000;
 
     function updateManualStakeDisplay() {
-      if (currentAmount < currentMinStake) currentAmount = currentMinStake;
-      if (currentAmount > currentMaxStake) currentAmount = currentMaxStake;
       tradeAmountEl.value = `$${currentAmount}`;
       localStorage.setItem('olymmatix_manual_stake', String(currentAmount));
     }
@@ -7319,10 +6865,10 @@
     tradeAmountEl.addEventListener('blur', function() {
       let val = this.value.replace(/[^0-9.]/g, '');
       let num = parseFloat(val);
-      if (isNaN(num) || num < currentMinStake) {
-        num = currentMinStake;
-      } else if (num > currentMaxStake) {
-        num = currentMaxStake;
+      if (isNaN(num) || num < MIN_AMOUNT) {
+        num = MIN_AMOUNT;
+      } else if (num > MAX_AMOUNT) {
+        num = MAX_AMOUNT;
       }
       currentAmount = Math.round(num);
       updateManualStakeDisplay();
@@ -7337,12 +6883,12 @@
 
     document.getElementById('incrementAmount').addEventListener('click', (e) => {
       e.stopPropagation();
-      if (currentAmount < currentMaxStake) { currentAmount += 1;
+      if (currentAmount < MAX_AMOUNT) { currentAmount += 1;
         updateManualStakeDisplay(); }
     });
     document.getElementById('decrementAmount').addEventListener('click', (e) => {
       e.stopPropagation();
-      if (currentAmount > currentMinStake) { currentAmount -= 1;
+      if (currentAmount > MIN_AMOUNT) { currentAmount -= 1;
         updateManualStakeDisplay(); }
     });
 
@@ -7350,7 +6896,7 @@
       const saved = localStorage.getItem('olymmatix_manual_stake');
       if (saved !== null) {
         let num = parseFloat(saved);
-        if (!isNaN(num) && num >= currentMinStake && num <= currentMaxStake) {
+        if (!isNaN(num) && num >= MIN_AMOUNT && num <= MAX_AMOUNT) {
           currentAmount = Math.round(num);
           updateManualStakeDisplay();
         } else {
@@ -7359,80 +6905,6 @@
       }
     })();
 
-    function updateStakeLimitsUI() {
-      if (typeof window.currentMinStake === 'number' && window.currentMinStake > 0) {
-        currentMinStake = window.currentMinStake;
-      }
-      if (typeof window.currentMaxStake === 'number' && window.currentMaxStake > 0) {
-        currentMaxStake = window.currentMaxStake;
-      }
-      if (currentMinStake > currentMaxStake) {
-        const temp = currentMinStake;
-        currentMinStake = currentMaxStake;
-        currentMaxStake = temp;
-      }
-      // Ensure currentAmount is within new bounds
-      if (currentAmount < currentMinStake) currentAmount = currentMinStake;
-      if (currentAmount > currentMaxStake) currentAmount = currentMaxStake;
-      updateManualStakeDisplay();
-      updateBotStakeDisplay();
-    }
-
-    // --- ROBOT STAKE ---
-    const robotAmountEl = document.getElementById('robotAmount');
-    let robotCurrentAmount = 5;
-
-    function updateBotStakeDisplay() {
-      if (robotCurrentAmount < currentMinStake) robotCurrentAmount = currentMinStake;
-      if (robotCurrentAmount > currentMaxStake) robotCurrentAmount = currentMaxStake;
-      robotAmountEl.value = `$${robotCurrentAmount}`;
-      localStorage.setItem('olymmatix_bot_stake', String(robotCurrentAmount));
-    }
-
-    robotAmountEl.addEventListener('blur', function() {
-      let val = this.value.replace(/[^0-9.]/g, '');
-      let num = parseFloat(val);
-      if (isNaN(num) || num < currentMinStake) {
-        num = currentMinStake;
-      } else if (num > currentMaxStake) {
-        num = currentMaxStake;
-      }
-      robotCurrentAmount = Math.round(num);
-      updateBotStakeDisplay();
-    });
-
-    robotAmountEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        this.blur();
-        e.preventDefault();
-      }
-    });
-
-    document.getElementById('robotIncrementAmount').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (robotCurrentAmount < currentMaxStake) { robotCurrentAmount += 1;
-        updateBotStakeDisplay(); }
-    });
-    document.getElementById('robotDecrementAmount').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (robotCurrentAmount > currentMinStake) { robotCurrentAmount -= 1;
-        updateBotStakeDisplay(); }
-    });
-
-    (function restoreBotStake() {
-      const saved = localStorage.getItem('olymmatix_bot_stake');
-      if (saved !== null) {
-        let num = parseFloat(saved);
-        if (!isNaN(num) && num >= currentMinStake && num <= currentMaxStake) {
-          robotCurrentAmount = Math.round(num);
-          updateBotStakeDisplay();
-        } else {
-          localStorage.removeItem('olymmatix_bot_stake');
-        }
-      }
-    })();
-
-    // --- Duration controls (unchanged) ---
     const tradeDurationEl = document.getElementById('tradeDuration');
     let currentDuration = 5;
 
@@ -7486,7 +6958,62 @@
     });
     updateDurationDisplay();
 
-    // --- Robot Duration (unchanged) ---
+    // =============================================
+    // ROBOT PARAMETERS
+    // =============================================
+    const robotAmountEl = document.getElementById('robotAmount');
+    let robotCurrentAmount = 5;
+    const ROBOT_MIN_AMOUNT = 5,
+      ROBOT_MAX_AMOUNT = 1000;
+
+    function updateBotStakeDisplay() {
+      robotAmountEl.value = `$${robotCurrentAmount}`;
+      localStorage.setItem('olymmatix_bot_stake', String(robotCurrentAmount));
+    }
+
+    robotAmountEl.addEventListener('blur', function() {
+      let val = this.value.replace(/[^0-9.]/g, '');
+      let num = parseFloat(val);
+      if (isNaN(num) || num < ROBOT_MIN_AMOUNT) {
+        num = ROBOT_MIN_AMOUNT;
+      } else if (num > ROBOT_MAX_AMOUNT) {
+        num = ROBOT_MAX_AMOUNT;
+      }
+      robotCurrentAmount = Math.round(num);
+      updateBotStakeDisplay();
+    });
+
+    robotAmountEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        this.blur();
+        e.preventDefault();
+      }
+    });
+
+    document.getElementById('robotIncrementAmount').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (robotCurrentAmount < ROBOT_MAX_AMOUNT) { robotCurrentAmount += 1;
+        updateBotStakeDisplay(); }
+    });
+    document.getElementById('robotDecrementAmount').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (robotCurrentAmount > ROBOT_MIN_AMOUNT) { robotCurrentAmount -= 1;
+        updateBotStakeDisplay(); }
+    });
+
+    (function restoreBotStake() {
+      const saved = localStorage.getItem('olymmatix_bot_stake');
+      if (saved !== null) {
+        let num = parseFloat(saved);
+        if (!isNaN(num) && num >= ROBOT_MIN_AMOUNT && num <= ROBOT_MAX_AMOUNT) {
+          robotCurrentAmount = Math.round(num);
+          updateBotStakeDisplay();
+        } else {
+          localStorage.removeItem('olymmatix_bot_stake');
+        }
+      }
+    })();
+
     const robotDurationEl = document.getElementById('robotDuration');
     let robotCurrentDuration = 5;
     const ROBOT_MIN_DURATION = 2,
@@ -7847,98 +7374,50 @@
     // =============================================
     // DEPOSIT - ORIGINAL WORKING VERSION WITH CUSTOM AMOUNT FIX
     // =============================================
-    let selectedKesValue = 6750;
-    let selectedUsdValue = 50; // Default to $50
+    let selectedAmountValue = 50;
 
-    // DEPOSIT LIVE BALANCE FIX START
-    // Dedicated function to synchronize the Deposit UI with the authoritative accountBalances state.
-    let selectedDepositAccount = 'real-usd'; // 'real-usd' or 'real-usdt'
-
-    function updateDepositAccountUI() {
-      // Update the balances in the account choice cards
-      const usdBalanceDisplay = document.getElementById('depositUsdBalanceDisplay');
-      const usdtBalanceDisplay = document.getElementById('depositUsdtBalanceDisplay');
-      if (usdBalanceDisplay) {
-        usdBalanceDisplay.textContent = `USD ${(accountBalances['real-usd'] || 0).toFixed(2)}`;
-      }
-      if (usdtBalanceDisplay) {
-        usdtBalanceDisplay.textContent = `USDT ${(accountBalances['real-usdt'] || 0).toFixed(2)}`;
-      }
-
-      // Update the selected account display in the deposit form
-      const isUsd = selectedDepositAccount === 'real-usd';
-      const accountName = isUsd ? 'USD Account' : 'USDT Account';
-      const currency = isUsd ? 'USD' : 'USDT';
-      const balance = Number(accountBalances[selectedDepositAccount]) || 0;
-      const iconSrc = isUsd ? 'logo.png' : 'trn.jpeg';
-      const accId = isUsd ? 'USD Account #8492019482' : 'USDT Account #2940306875';
-
-      const nameEl = document.getElementById('depositSelectedAccountName');
-      const balanceEl = document.getElementById('depositSelectedAccountBalance');
-      const idEl = document.getElementById('depositAccountIdHeader');
-      const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
-
-      if (nameEl) nameEl.textContent = accountName;
-      if (balanceEl) balanceEl.textContent = `${currency} ${balance.toFixed(2)}`;
-      if (idEl) idEl.textContent = accId;
-      if (accountIcon) {
-        accountIcon.innerHTML = `<img src="${iconSrc}" alt="${accountName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-      }
-
-      // Update deposit amount display if it shows the old currency
-      const amountDisplay = document.getElementById('depositAmountDisplay');
-      if (amountDisplay) {
-        const currentText = amountDisplay.textContent;
-        if (currentText.includes('KES') || currentText.includes('USD') || currentText.includes('USDT')) {
-          // If it's a crypto method (non-Mpesa), show the amount in the account's currency
-          const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
-          if (cryptoMethods.includes(selectedPaymentMethodForDeposit)) {
-            amountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
-          } else if (selectedPaymentMethodForDeposit === 'Mpesa') {
-            amountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
-          } else {
-            amountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
-          }
-        }
-      }
-
-      // Update the account choice cards highlight
-      const accOptions = document.querySelectorAll('.deposit-acc-option');
-      accOptions.forEach(opt => {
-        const key = opt.getAttribute('data-account-key');
-        if (key === selectedDepositAccount) {
-          opt.style.border = '2px solid var(--btn-primary)';
-        } else {
-          opt.style.border = '1px solid var(--border-light)';
-        }
-      });
-    }
-    // DEPOSIT LIVE BALANCE FIX END
-
-    // DEPOSIT BALANCE FIX START (modified setDefaultDepositAccount)
     function setDefaultDepositAccount() {
-      const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
+      const cryptoMethods = ['Binance', 'Bybit', 'OKX', 'TRON'];
       const isCrypto = cryptoMethods.includes(selectedPaymentMethodForDeposit);
 
-      // Determine default account type based on the selected payment method.
-      let defaultAccountType = isCrypto ? 'real-usdt' : 'real-usd';
-      // Ensure the selected deposit account is updated.
-      selectedDepositAccount = defaultAccountType;
-      
-      // DEPOSIT LIVE BALANCE FIX: Call the dedicated UI sync function.
-      updateDepositAccountUI();
-      
-      // Also update the amount display if needed
-      const amountDisplay = document.getElementById('depositAmountDisplay');
-      if (amountDisplay) {
+      let defaultAccount, defaultBalance, defaultId, defaultCurrency, defaultIcon;
+
+      if (isCrypto) {
+        defaultAccount = 'USDT Account';
+        defaultBalance = 'USDT 0.00';
+        defaultId = 'USDT Account #2940306875';
+        defaultCurrency = 'USDT';
+        defaultIcon = 'trn.jpeg';
+      } else {
+        defaultAccount = 'USD Account';
+        defaultBalance = 'USD 0.00';
+        defaultId = 'USD Account #8492019482';
+        defaultCurrency = 'USD';
+        defaultIcon = 'logo.png';
+      }
+
+      const nameEl = document.getElementById('depositSelectedAccountName');
+      const balEl = document.getElementById('depositSelectedAccountBalance');
+      const idEl = document.getElementById('depositAccountIdHeader');
+      const amountEl = document.getElementById('depositAmountDisplay');
+
+      if (nameEl) nameEl.textContent = defaultAccount;
+      if (balEl) balEl.textContent = defaultBalance;
+      if (idEl) idEl.textContent = defaultId;
+      if (amountEl) {
         if (isCrypto) {
-          amountDisplay.textContent = `USDT ${selectedUsdValue.toLocaleString()}`;
+          amountEl.textContent = `USDT ${selectedAmountValue.toLocaleString()}`;
         } else {
-          amountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
+          amountEl.textContent = `$ ${selectedAmountValue.toLocaleString()}`;
         }
       }
+
+      const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
+      if (accountIcon) {
+        accountIcon.innerHTML =
+          `<img src="${defaultIcon}" alt="${defaultAccount}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+      }
     }
-    // DEPOSIT BALANCE FIX END
 
     function updatePaymentMethodIcon(methodName, logoFile) {
       const paymentIcon = document.querySelector('#depositPaymentMethodTrigger .deposit-row-content > div > div');
@@ -7950,126 +7429,44 @@
       if (titleEl) titleEl.textContent = methodName;
     }
 
-    // CUSTOM DEPOSIT AMOUNT FIX START
-    // Update the amount state and UI based on the current input value
-    function updateSelectedAmountFromInput() {
-      const customInput = document.getElementById('customKesInput');
-      if (!customInput) return;
-      
-      const val = parseFloat(customInput.value);
-      if (isNaN(val) || val <= 0) return;
-      
-      if (currentSelectedMethod === 'Mpesa') {
-        selectedKesValue = val;
-      } else {
-        selectedUsdValue = val;
-      }
-      
-      // Update preset button visual states based on current value
-      const presetBtns = document.querySelectorAll('.mpesa-preset-btn');
-      presetBtns.forEach(btn => {
-        const btnVal = parseFloat(btn.getAttribute('data-amount'));
-        if (btnVal === val) {
-          btn.classList.add('active');
-          btn.style.border = '2px solid var(--btn-primary)';
-          btn.style.backgroundColor = 'var(--bg-active)';
-        } else {
-          btn.classList.remove('active');
-          btn.style.border = '1px solid var(--border-light)';
-          btn.style.backgroundColor = 'var(--bg-card)';
-        }
-      });
-    }
-
     function updateDepositAmountPanelUI() {
       const minLabel = document.getElementById('depositAmountMinLabel');
       const currencyPrefix = document.getElementById('amountCurrencyPrefix');
-      const customInput = document.getElementById('customKesInput');
+      const customInput = document.getElementById('customAmountInput');
       const recLabel = document.getElementById('depositAmountRecLabel');
       const grid = document.getElementById('presetAmountsGrid');
 
-      // Ensure we have the current minimum from Firebase.
-      const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
-      const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-
-      if (currentSelectedMethod === 'Mpesa') {
-        const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
-        if (minLabel) minLabel.textContent = `Deposit amount (Min KES ${minKes} = $${minDeposit})`;
-        if (currencyPrefix) currencyPrefix.textContent = 'KES';
-        if (customInput) { 
-          if (selectedKesValue < minKes) selectedKesValue = minKes;
-          customInput.value = selectedKesValue; 
-          customInput.min = minKes; 
-        }
-        // RECOMMENDATION TEXT UPDATED FOR M-PESA
-        if (recLabel) recLabel.textContent = 'Recommended deposit for the robot is at least 50 USD';
-        if (grid) {
-          // Generate preset amounts based on minDeposit and maxDeposit
-          const base = minDeposit;
-          const options = [base, base * 2, base * 5, base * 10, base * 20, base * 50, base * 100, base * 500];
-          // Filter options that are <= maxDeposit (converted to KES)
-          const maxKes = maxDeposit * USD_TO_KES;
-          grid.innerHTML = options
-            .filter(amount => amount * USD_TO_KES <= maxKes)
-            .map(amount => {
-              const kesAmount = Math.ceil(amount * USD_TO_KES);
-              const selected = Math.abs(selectedKesValue - kesAmount) < 0.01;
-              return `<button class="mpesa-preset-btn ${selected ? 'active' : ''}" data-amount="${kesAmount}">KES ${kesAmount.toLocaleString()} ($${amount})</button>`;
-            }).join('');
-          attachPresetEvents();
-        }
-      } else {
-        const selectedAccName = document.getElementById('depositSelectedAccountName')?.textContent || '';
-        const currency = selectedAccName.includes('USDT') ? 'USDT' : 'USD';
-        if (minLabel) minLabel.textContent = `Deposit amount (Min ${currency} ${minDeposit})`;
-        if (currencyPrefix) currencyPrefix.textContent = currency;
-        if (customInput) { 
-          if (selectedUsdValue < minDeposit) selectedUsdValue = minDeposit;
-          if (selectedUsdValue > maxDeposit) selectedUsdValue = maxDeposit;
-          customInput.value = selectedUsdValue; 
-          customInput.min = minDeposit; 
-          customInput.max = maxDeposit;
-        }
-        // RECOMMENDATION TEXT UPDATED FOR OTHER PAYMENT METHODS (USDT)
-        if (recLabel) recLabel.textContent = 'Recommended deposit for the robot is at least 50 USDT';
-        if (grid) {
-          const base = minDeposit;
-          const options = [base, base * 2, base * 5, base * 10, base * 20, base * 50, base * 100, base * 500];
-          grid.innerHTML = options
-            .filter(amount => amount <= maxDeposit)
-            .map(amount => {
-              const selected = Math.abs(selectedUsdValue - amount) < 0.01;
-              return `<button class="mpesa-preset-btn ${selected ? 'active' : ''}" data-amount="${amount}">${currency} ${amount.toLocaleString()}</button>`;
-            }).join('');
-          attachPresetEvents();
-        }
+      if (minLabel) minLabel.textContent = 'Deposit amount (Min $5)';
+      if (currencyPrefix) currencyPrefix.textContent = '$';
+      if (customInput) { customInput.value = selectedAmountValue;
+        customInput.min = 5; }
+      if (recLabel) recLabel.textContent = 'Recommended deposit for the robot is at least $50';
+      if (grid) {
+        grid.innerHTML = `
+          <button class="preset-btn ${selectedAmountValue === 5 ? 'active' : ''}" data-amount="5">$5</button>
+          <button class="preset-btn ${selectedAmountValue === 10 ? 'active' : ''}" data-amount="10">$10</button>
+          <button class="preset-btn ${selectedAmountValue === 25 ? 'active' : ''}" data-amount="25">$25</button>
+          <button class="preset-btn ${selectedAmountValue === 50 ? 'active' : ''}" data-amount="50">$50</button>
+          <button class="preset-btn ${selectedAmountValue === 100 ? 'active' : ''}" data-amount="100">$100</button>
+          <button class="preset-btn ${selectedAmountValue === 200 ? 'active' : ''}" data-amount="200">$200</button>
+          <button class="preset-btn ${selectedAmountValue === 500 ? 'active' : ''}" data-amount="500">$500</button>
+          <button class="preset-btn ${selectedAmountValue === 1000 ? 'active' : ''}" data-amount="1000">$1,000</button>
+        `;
+        attachPresetEvents();
       }
     }
 
     function attachPresetEvents() {
-      const kesPresetBtns = document.querySelectorAll('.mpesa-preset-btn');
-      const customKesInput = document.getElementById('customKesInput');
-      kesPresetBtns.forEach(btn => {
-        // Remove existing listeners to avoid duplication
+      const presetBtns = document.querySelectorAll('.preset-btn');
+      const customInput = document.getElementById('customAmountInput');
+      presetBtns.forEach(btn => {
         btn.removeEventListener('click', btn._presetClickHandler);
         btn._presetClickHandler = function(e) {
           e.stopPropagation();
           const val = parseInt(this.getAttribute('data-amount'), 10);
-          
-          // Update the selected amount value
-          if (currentSelectedMethod === 'Mpesa') {
-            selectedKesValue = val;
-          } else {
-            selectedUsdValue = val;
-          }
-          
-          // Update the input field to match
-          if (customKesInput) {
-            customKesInput.value = val;
-          }
-          
-          // Update visual state of preset buttons
-          kesPresetBtns.forEach(b => {
+          selectedAmountValue = val;
+          if (customInput) customInput.value = val;
+          presetBtns.forEach(b => {
             b.classList.remove('active');
             b.style.border = '1px solid var(--border-light)';
             b.style.backgroundColor = 'var(--bg-card)';
@@ -8081,22 +7478,13 @@
         btn.addEventListener('click', btn._presetClickHandler);
       });
       
-      // CUSTOM DEPOSIT AMOUNT FIX START - Set up custom input listener
-      if (customKesInput) {
-        // Remove existing listener to avoid duplication
-        customKesInput.removeEventListener('input', customKesInput._inputHandler);
-        customKesInput._inputHandler = function() {
+      if (customInput) {
+        customInput.removeEventListener('input', customInput._inputHandler);
+        customInput._inputHandler = function() {
           const val = parseFloat(this.value);
           if (!isNaN(val) && val > 0) {
-            // Update the selected amount
-            if (currentSelectedMethod === 'Mpesa') {
-              selectedKesValue = val;
-            } else {
-              selectedUsdValue = val;
-            }
-            
-            // Update preset button visual states
-            const presetBtns = document.querySelectorAll('.mpesa-preset-btn');
+            selectedAmountValue = val;
+            const presetBtns = document.querySelectorAll('.preset-btn');
             let matchedPreset = false;
             presetBtns.forEach(b => {
               const btnVal = parseFloat(b.getAttribute('data-amount'));
@@ -8113,26 +7501,19 @@
             });
           }
         };
-        customKesInput.addEventListener('input', customKesInput._inputHandler);
+        customInput.addEventListener('input', customInput._inputHandler);
       }
-      // CUSTOM DEPOSIT AMOUNT FIX END
     }
-    // CUSTOM DEPOSIT AMOUNT FIX END
 
     if (buttons.accMenuDeposit) {
       buttons.accMenuDeposit.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectedPaymentMethodForDeposit = 'Mpesa';
-        currentSelectedMethod = 'Mpesa';
-        // DEPOSIT LIVE BALANCE FIX: Set default account and update UI
-        selectedDepositAccount = 'real-usd';
+        selectedPaymentMethodForDeposit = 'Binance';
+        currentSelectedMethod = 'Binance';
         setDefaultDepositAccount();
-        updatePaymentMethodIcon('Mpesa', 'mpesa.png');
+        updatePaymentMethodIcon('Binance', 'binance.png');
         openPanel('accountDepositForm', 'account');
         savePanelState('accountDepositForm', ['accountDepositForm']);
-        resetStkStatus();
-        // DEPOSIT LIVE BALANCE FIX: Ensure UI is synchronized
-        updateDepositAccountUI();
       });
     }
 
@@ -8178,13 +7559,13 @@
             // Close activation panel and open withdrawal
             if (panels.accountActivation) panels.accountActivation.classList.add('hidden');
             // Re-initialize withdrawal state and open panel
-            selectedWithdrawMethod = 'Mpesa';
-            selectedWithdrawMethodLogo = 'mpesa.png';
+            selectedWithdrawMethod = 'Binance';
+            selectedWithdrawMethodLogo = 'binance.png';
             const methodIcon = document.getElementById('withdrawMethodIcon');
             const methodNameEl = document.getElementById('withdrawMethodName');
-            if (methodIcon) methodIcon.src = 'mpesa.png';
-            if (methodNameEl) methodNameEl.textContent = 'M-PESA';
-            updateWithdrawDetails('Mpesa');
+            if (methodIcon) methodIcon.src = 'binance.png';
+            if (methodNameEl) methodNameEl.textContent = 'Binance';
+            updateWithdrawDetails('Binance');
             if (withdrawAmountInput) withdrawAmountInput.value = 50;
             withdrawPresetBtns.forEach(b => {
               b.style.background = 'var(--bg-card)';
@@ -8224,16 +7605,13 @@
         } else {
           // No successful deposit, proceed to deposit form
           if (panels.accountActivation) panels.accountActivation.classList.add('hidden');
-          selectedPaymentMethodForDeposit = 'Mpesa';
-          currentSelectedMethod = 'Mpesa';
-          selectedDepositAccount = 'real-usd';
+          selectedPaymentMethodForDeposit = 'Binance';
+          currentSelectedMethod = 'Binance';
           setDefaultDepositAccount();
-          updatePaymentMethodIcon('Mpesa', 'mpesa.png');
+          updatePaymentMethodIcon('Binance', 'binance.png');
           if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
           if (chartOverlay) chartOverlay.classList.add('active');
           savePanelState('accountDepositForm', ['accountDepositForm']);
-          resetStkStatus();
-          updateDepositAccountUI();
         }
       });
     }
@@ -8243,169 +7621,57 @@
     if (depositAmountFieldTrigger) {
       depositAmountFieldTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Ensure we have the latest min before opening.
-        const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
-        const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-        // If selectedKesValue is below min, adjust it.
-        const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
-        if (currentSelectedMethod === 'Mpesa' && selectedKesValue < minKes) selectedKesValue = minKes;
-        if (currentSelectedMethod !== 'Mpesa' && selectedUsdValue < minDeposit) selectedUsdValue = minDeposit;
-        if (currentSelectedMethod !== 'Mpesa' && selectedUsdValue > maxDeposit) selectedUsdValue = maxDeposit;
         updateDepositAmountPanelUI();
         if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
-        if (panels.kesDepositAmount) panels.kesDepositAmount.classList.remove('hidden');
-        savePanelState('kesDepositAmount', ['kesDepositAmount']);
+        if (panels.depositAmount) panels.depositAmount.classList.remove('hidden');
+        savePanelState('depositAmount', ['depositAmount']);
       });
     }
 
-    // CUSTOM DEPOSIT AMOUNT FIX START - Fixed confirm handler to use current input value
-    const confirmKesAmountBtn = document.getElementById('confirmKesAmountBtn');
-    if (confirmKesAmountBtn) {
-      confirmKesAmountBtn.addEventListener('click', (e) => {
+    const confirmAmountBtn = document.getElementById('confirmAmountBtn');
+    if (confirmAmountBtn) {
+      confirmAmountBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        
-        // Read the current value from the input field - this is the source of truth
-        const customInput = document.getElementById('customKesInput');
+        const customInput = document.getElementById('customAmountInput');
         let currentVal = customInput ? parseFloat(customInput.value) : 0;
-        
-        // Get the current minimum from Firebase
-        const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
-        const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-        const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
-        const maxKes = maxDeposit * USD_TO_KES;
-        
         if (isNaN(currentVal) || currentVal <= 0) {
-          // Fallback to the stored values if input is invalid
-          currentVal = currentSelectedMethod === 'Mpesa' ? selectedKesValue : selectedUsdValue;
+          currentVal = selectedAmountValue;
           if (customInput) customInput.value = currentVal;
         }
-        
-        if (currentSelectedMethod === 'Mpesa') {
-          // Update selectedKesValue from current input value
-          selectedKesValue = Math.round(currentVal);
-          
-          if (selectedKesValue < minKes) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
-                            <div style="font-weight: 600;">Minimum Deposit</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is KES ${minKes} ($${minDeposit})</div>
-                        `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            if (customInput) { customInput.value = minKes;
-              selectedKesValue = minKes; }
-            return;
-          }
-          if (selectedKesValue > maxKes) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
-                            <div style="font-weight: 600;">Maximum Deposit</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">Maximum deposit is KES ${maxKes} ($${maxDeposit})</div>
-                        `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            if (customInput) { customInput.value = maxKes;
-              selectedKesValue = maxKes; }
-            return;
-          }
-          
-          document.getElementById('depositAmountDisplay').textContent =
-            `KES ${selectedKesValue.toLocaleString()}`;
-          if (panels.kesDepositAmount) panels.kesDepositAmount.classList.add('hidden');
-          if (panels.mpesaStk) panels.mpesaStk.classList.remove('hidden');
-          if (chartOverlay) chartOverlay.classList.add('active');
-          const amountDisplay = document.getElementById('mpesaStkAmount');
-          if (amountDisplay) {
-            amountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
-          }
-          savePanelState('mpesaStk', ['mpesaStk']);
-          resetStkStatus();
-        } else {
-          // Update selectedUsdValue from current input value
-          selectedUsdValue = Math.round(currentVal);
-          
-          const selectedAccName = document.getElementById('depositSelectedAccountName').textContent;
-          const currency = selectedAccName.includes('USDT') ? 'USDT' : 'USD';
-          if (selectedUsdValue < minDeposit) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
-                            <div style="font-weight: 600;">Minimum Deposit</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is ${currency} ${minDeposit}</div>
-                        `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            if (customInput) { customInput.value = minDeposit;
-              selectedUsdValue = minDeposit; }
-            return;
-          }
-          if (selectedUsdValue > maxDeposit) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
-                            <div style="font-weight: 600;">Maximum Deposit</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">Maximum deposit is ${currency} ${maxDeposit}</div>
-                        `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            if (customInput) { customInput.value = maxDeposit;
-              selectedUsdValue = maxDeposit; }
-            return;
-          }
-          document.getElementById('depositAmountDisplay').textContent =
-            `${currency} ${selectedUsdValue.toLocaleString()}`;
-          if (panels.kesDepositAmount) panels.kesDepositAmount.classList.add('hidden');
-          if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
-          savePanelState('accountDepositForm', ['accountDepositForm']);
+        selectedAmountValue = Math.round(currentVal);
+        if (selectedAmountValue < 5) {
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--btn-danger)';
+          notif.innerHTML = `
+            <div style="font-weight: 600;">Minimum Deposit</div>
+            <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is $5</div>
+          `;
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 3000);
+          if (customInput) { customInput.value = 5;
+            selectedAmountValue = 5; }
+          return;
         }
+        document.getElementById('depositAmountDisplay').textContent = `$ ${selectedAmountValue.toLocaleString()}`;
+        if (panels.depositAmount) panels.depositAmount.classList.add('hidden');
+        if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
+        savePanelState('accountDepositForm', ['accountDepositForm']);
       });
     }
-    // CUSTOM DEPOSIT AMOUNT FIX END
 
     const depositAccountSelectorTrigger = document.getElementById('depositAccountSelectorTrigger');
     if (depositAccountSelectorTrigger) {
       depositAccountSelectorTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        // DEPOSIT LIVE BALANCE FIX: Ensure the account choice panel shows current balances.
-        updateDepositAccountUI();
         if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
         if (panels.depositAccountChoice) panels.depositAccountChoice.classList.remove('hidden');
         savePanelState('depositAccountChoice', ['depositAccountChoice']);
@@ -8433,57 +7699,55 @@
         selectedPaymentMethodForDeposit = methodName;
         currentSelectedMethod = methodName;
         updatePaymentMethodIcon(methodName, logoFile);
-        // DEPOSIT LIVE BALANCE FIX: Reset selected account based on payment method
-        const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
-        selectedDepositAccount = cryptoMethods.includes(methodName) ? 'real-usdt' : 'real-usd';
         setDefaultDepositAccount();
         const depositAmountDisplay = document.getElementById('depositAmountDisplay');
         if (depositAmountDisplay) {
-          if (methodName === 'Mpesa') {
-            depositAmountDisplay.textContent = `KES ${selectedKesValue.toLocaleString()}`;
+          const isCrypto = ['Binance', 'Bybit', 'OKX', 'TRON'].includes(methodName);
+          if (isCrypto) {
+            depositAmountDisplay.textContent = `USDT ${selectedAmountValue.toLocaleString()}`;
           } else {
-            depositAmountDisplay.textContent = `USDT ${selectedUsdValue.toLocaleString()}`;
+            depositAmountDisplay.textContent = `$ ${selectedAmountValue.toLocaleString()}`;
           }
         }
         if (panels.paymentMethodChoice) panels.paymentMethodChoice.classList.add('hidden');
         if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
         savePanelState('accountDepositForm', ['accountDepositForm']);
-        resetStkStatus();
-        // DEPOSIT LIVE BALANCE FIX: Update UI after payment method change
-        updateDepositAccountUI();
       });
     });
 
-    // DEPOSIT LIVE BALANCE FIX START: Updated deposit account options click handler
     const depositAccOptions = document.querySelectorAll('.deposit-acc-option');
     depositAccOptions.forEach(opt => {
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        const accKey = opt.getAttribute('data-account-key'); // 'real-usd' or 'real-usdt'
-        if (accKey && (accKey === 'real-usd' || accKey === 'real-usdt')) {
-          // Set the selected deposit account
-          selectedDepositAccount = accKey;
-          // Update the UI using the dedicated synchronizer
-          updateDepositAccountUI();
-          
-          // Close the account choice panel and return to deposit form
-          if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
-          if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
-          if (chartOverlay) chartOverlay.classList.add('active');
-          savePanelState('accountDepositForm', ['accountDepositForm']);
-          
-          // Update the account balance display in the deposit form
-          const isUsd = selectedDepositAccount === 'real-usd';
-          const currency = isUsd ? 'USD' : 'USDT';
-          const balance = accountBalances[selectedDepositAccount] || 0;
-          const balanceEl = document.getElementById('depositSelectedAccountBalance');
-          if (balanceEl) {
-            balanceEl.textContent = `${currency} ${balance.toFixed(2)}`;
+        const accName = opt.getAttribute('data-accname');
+        const accBal = opt.getAttribute('data-accbal');
+        const accId = opt.getAttribute('data-accid');
+        const currency = opt.getAttribute('data-currency') || 'USD';
+        document.getElementById('depositSelectedAccountName').textContent = accName;
+        document.getElementById('depositSelectedAccountBalance').textContent = accBal;
+        document.getElementById('depositAccountIdHeader').textContent = accId;
+        const depositAmountDisplay = document.getElementById('depositAmountDisplay');
+        if (depositAmountDisplay) {
+          const isCrypto = ['Binance', 'Bybit', 'OKX', 'TRON'].includes(currentSelectedMethod);
+          if (isCrypto) {
+            depositAmountDisplay.textContent = `USDT ${selectedAmountValue.toLocaleString()}`;
+          } else {
+            depositAmountDisplay.textContent = `$ ${selectedAmountValue.toLocaleString()}`;
           }
         }
+        const accountIcon = document.querySelector('#depositAccountSelectorTrigger .deposit-row-content > div > div');
+        if (accountIcon) {
+          const iconSrc = opt.querySelector('img') ? opt.querySelector('img').src : 'logo.png';
+          accountIcon.innerHTML =
+            `<img src="${iconSrc}" alt="${accName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        }
+        depositAccOptions.forEach(o => { o.style.border = '1px solid var(--border-light)'; });
+        opt.style.border = '2px solid var(--btn-primary)';
+        if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
+        if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
+        savePanelState('accountDepositForm', ['accountDepositForm']);
       });
     });
-    // DEPOSIT LIVE BALANCE FIX END
 
     const submitDepositBtn = document.getElementById('submitDepositBtn');
     if (submitDepositBtn) {
@@ -8498,22 +7762,23 @@
         if (paymentIconImg && confirmLogoImg) {
           confirmLogoImg.src = paymentIconImg.src;
         }
-        if (['Binance', 'Bybit', 'OKX'].includes(selectedPaymentMethodForDeposit)) {
+        if (['Binance', 'Bybit', 'OKX', 'TRON'].includes(selectedPaymentMethodForDeposit)) {
           if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
           if (panels.usdtDeposit) panels.usdtDeposit.classList.remove('hidden');
           if (chartOverlay) chartOverlay.classList.add('active');
           const walletAddressEl = document.getElementById('usdtWalletAddress');
           const walletAddresses = {
             'Binance': 'TYP4ap9SbPZdZTwKbNA9euBsrgPC7ugdDK',
-            'Bybit': 'TXforKSJZg7zTLZqzKqFfdvBcVbgvArzyk',
-            'OKX': 'TXRPmnWDMZkGvSbYLBss5kMDZu58TKwod2'
+            'Bybit': 'TYP4ap9SbPZdZTwKbNA9euBsrgPC7ugdDK',
+            'OKX': 'TYP4ap9SbPZdZTwKbNA9euBsrgPC7ugdDK',
+            'TRON': 'TWJFmRy8Z5scFMyxVxPwNR8yaSB63uZqHL'
           };
           if (walletAddressEl && walletAddresses[selectedPaymentMethodForDeposit]) {
             walletAddressEl.textContent = walletAddresses[selectedPaymentMethodForDeposit];
           }
           const amountDisplay = document.getElementById('usdtAmountDisplay');
           const amountInput = document.getElementById('usdtAmountInput');
-          let usdAmount = selectedUsdValue || 50;
+          let usdAmount = selectedAmountValue;
           if (amountDisplay) {
             amountDisplay.textContent = `${usdAmount} USDT`;
           }
@@ -8523,21 +7788,9 @@
           savePanelState('usdtDeposit', ['usdtDeposit']);
           return;
         }
-        if (selectedPaymentMethodForDeposit === 'Mpesa') {
-          if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
-          if (panels.mpesaStk) panels.mpesaStk.classList.remove('hidden');
-          if (chartOverlay) chartOverlay.classList.add('active');
-          const amountDisplay = document.getElementById('mpesaStkAmount');
-          if (amountDisplay) {
-            amountDisplay.textContent = currentAmountText;
-          }
-          savePanelState('mpesaStk', ['mpesaStk']);
-          resetStkStatus();
-          return;
-        }
         let currencyCode = 'USD';
         if (currentAccountNameText.includes('USDT') || currentAccountIdText.includes('USDT')) currencyCode = 'USDT';
-        else if (currentAmountText.includes('KES')) currencyCode = 'KES';
+        else if (currentAmountText.includes('$')) currencyCode = 'USD';
         else if (currentAmountText.includes('USDT')) currencyCode = 'USDT';
         document.getElementById('confirmPaymentAmountDisplay').textContent = `${currentAmountText}`;
         document.getElementById('confirmPaymentMethodLabel').textContent = currentMethodText;
@@ -8561,9 +7814,6 @@
         const accountName = document.getElementById('confirmPaymentAccountName').textContent;
         let targetAccount = currentAccountType;
         let depositAmount = amount;
-        if (amountText.includes('KES')) {
-          depositAmount = amount / USD_TO_KES;
-        }
         if (accountName.includes('USD') && !accountName.includes('USDT')) targetAccount = 'real-usd';
         else if (accountName.includes('USDT')) targetAccount = 'real-usdt';
         if (depositAmount > 0) {
@@ -8626,16 +7876,6 @@
     // =============================================
     // USDT DEPOSIT
     // =============================================
-    function updateUsdtDepositMaxUI(maxDeposit) {
-      const amountInput = document.getElementById('usdtAmountInput');
-      if (amountInput) {
-        amountInput.max = maxDeposit;
-        if (parseFloat(amountInput.value) > maxDeposit) {
-          amountInput.value = maxDeposit;
-        }
-      }
-    }
-
     const copyWalletBtn = document.getElementById('copyWalletAddress');
     if (copyWalletBtn) {
       copyWalletBtn.addEventListener('click', (e) => {
@@ -8670,35 +7910,13 @@
         const amount = parseFloat(document.getElementById('usdtAmountInput').value);
         const hash = document.getElementById('usdtHashInput').value;
         const note = document.getElementById('usdtNoteInput').value;
-        const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
-        const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-        if (!amount || amount < minDeposit) {
+        if (!amount || amount < 5) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
           notif.style.borderColor = 'var(--btn-danger)';
           notif.innerHTML = `
                         <div style="font-weight: 600;">Minimum Deposit</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is ${minDeposit} USDT</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
-        if (amount > maxDeposit) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Maximum Deposit</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Maximum deposit is ${maxDeposit} USDT</div>
+                        <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is 5 USDT</div>
                     `;
           document.body.appendChild(notif);
           setTimeout(() => {
@@ -8754,8 +7972,8 @@
     // =============================================
     // WITHDRAWAL - ORIGINAL WORKING VERSION WITH ACCOUNT SELECTION PATCH
     // =============================================
-    let selectedWithdrawMethod = 'Mpesa';
-    let selectedWithdrawMethodLogo = 'mpesa.png';
+    let selectedWithdrawMethod = 'Binance';
+    let selectedWithdrawMethodLogo = 'binance.png';
     // WITHDRAW ACCOUNT SELECTION PATCH START – new state variable
     let selectedWithdrawAccount = 'real-usd'; // default to Real USD
     // WITHDRAW ACCOUNT SELECTION PATCH END
@@ -8827,13 +8045,13 @@
     
     // Helper function to open withdrawal panel with all initialization
     function openWithdrawalPanel() {
-      selectedWithdrawMethod = 'Mpesa';
-      selectedWithdrawMethodLogo = 'mpesa.png';
+      selectedWithdrawMethod = 'Binance';
+      selectedWithdrawMethodLogo = 'binance.png';
       const methodIcon = document.getElementById('withdrawMethodIcon');
       const methodNameEl = document.getElementById('withdrawMethodName');
-      if (methodIcon) methodIcon.src = 'mpesa.png';
-      if (methodNameEl) methodNameEl.textContent = 'M-PESA';
-      updateWithdrawDetails('Mpesa');
+      if (methodIcon) methodIcon.src = 'binance.png';
+      if (methodNameEl) methodNameEl.textContent = 'Binance';
+      updateWithdrawDetails('Binance');
       if (withdrawAmountInput) withdrawAmountInput.value = 50;
       withdrawPresetBtns.forEach(b => {
         b.style.background = 'var(--bg-card)';
@@ -8881,11 +8099,7 @@
         const methodNameEl = document.getElementById('withdrawMethodName');
         if (methodIcon) methodIcon.src = methodLogo;
         if (methodNameEl) {
-          if (methodName === 'Mpesa') {
-            methodNameEl.textContent = 'M-PESA';
-          } else {
-            methodNameEl.textContent = methodName;
-          }
+          methodNameEl.textContent = methodName;
         }
         updateWithdrawDetails(methodName);
         if (panels.withdrawPaymentMethod) panels.withdrawPaymentMethod.classList.add('hidden');
@@ -8898,79 +8112,12 @@
     function updateWithdrawDetails(method) {
       const container = document.getElementById('withdrawDetailsContainer');
       if (!container) return;
-      if (method === 'Mpesa') {
-        container.innerHTML = `
-          <div class="deposit-sub-title">M-PESA phone number</div>
-          <div class="mpesa-phone-input" style="margin-bottom:16px;">
-            <span class="prefix">+254</span>
-            <input type="text" id="withdrawPhoneInput" placeholder="700 000 000" maxlength="9" autocomplete="off" style="background:transparent;border:none;font-size:16px;font-weight:600;color:var(--text-white);width:100%;outline:none;letter-spacing:1px;font-family:monospace;">
-          </div>
-        `;
-        setTimeout(initWithdrawPhoneInput, 100);
-      } else {
-        container.innerHTML = `
-          <div class="deposit-sub-title">${method} wallet address</div>
-          <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:12px 16px;margin-bottom:16px;">
-            <input type="text" id="withdrawAddressInput" placeholder="Enter your ${method} address" style="background:transparent;border:none;font-size:14px;color:var(--text-white);width:100%;outline:none;">
-          </div>
-        `;
-      }
-    }
-
-    function initWithdrawPhoneInput() {
-      const mpesaPhoneInput = document.getElementById('withdrawPhoneInput');
-      if (!mpesaPhoneInput) return;
-      let realPhoneNumber = "";
-      function updateMpesaDisplay() {
-        let masked = "";
-        for (let i = 0; i < realPhoneNumber.length; i++) {
-          if (i >= 3 && i <= 5) {
-            masked += "X";
-          } else {
-            masked += realPhoneNumber[i];
-          }
-        }
-        mpesaPhoneInput.value = masked;
-        mpesaPhoneInput.dataset.rawValue = realPhoneNumber;
-      }
-
-      mpesaPhoneInput.addEventListener("beforeinput", function(e) {
-        if (e.inputType === "insertText" && e.data && /^[0-9]$/.test(e.data)) {
-          if (realPhoneNumber.length >= 9) {
-            e.preventDefault();
-            return;
-          }
-          realPhoneNumber += e.data;
-          updateMpesaDisplay();
-          e.preventDefault();
-        }
-      });
-      mpesaPhoneInput.addEventListener("keydown", function(e) {
-        if (e.key === "Backspace") {
-          e.preventDefault();
-          if (realPhoneNumber.length > 0) {
-            realPhoneNumber = realPhoneNumber.slice(0, -1);
-          }
-          updateMpesaDisplay();
-        }
-      });
-      mpesaPhoneInput.addEventListener("paste", function(e) {
-        e.preventDefault();
-        const pasted = (e.clipboardData || window.clipboardData).getData('text');
-        const digitsOnly = pasted.replace(/\D/g, '');
-        if (digitsOnly.length > 0) {
-          const limited = digitsOnly.slice(0, 9);
-          realPhoneNumber = limited;
-          updateMpesaDisplay();
-        }
-      });
-      mpesaPhoneInput.addEventListener("focus", function() {
-        this.select();
-      });
-      mpesaPhoneInput.addEventListener("blur", function() {
-        updateMpesaDisplay();
-      });
-      updateMpesaDisplay();
+      container.innerHTML = `
+        <div class="deposit-sub-title">${method} wallet address</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:12px 16px;margin-bottom:16px;">
+          <input type="text" id="withdrawAddressInput" placeholder="Enter your ${method} address" style="background:transparent;border:none;font-size:14px;color:var(--text-white);width:100%;outline:none;">
+        </div>
+      `;
     }
 
     const withdrawPresetBtns = document.querySelectorAll('.withdraw-preset-btn');
@@ -9087,50 +8234,18 @@
     }
     // WITHDRAW ACCOUNT SELECTION PATCH END
 
-    function updateWithdrawalMaxUI(maxWithdrawal) {
-      const amountInput = document.getElementById('withdrawAmountInput');
-      if (amountInput) {
-        amountInput.max = maxWithdrawal;
-        if (parseFloat(amountInput.value) > maxWithdrawal) {
-          amountInput.value = maxWithdrawal;
-        }
-      }
-    }
-
     const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
     if (submitWithdrawBtn) {
       submitWithdrawBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const minWithdrawal = (window.minimumWithdrawal !== undefined && window.minimumWithdrawal !== null) ? window.minimumWithdrawal : 50;
-        const maxWithdrawal = (window.maximumWithdrawal !== undefined && window.maximumWithdrawal !== null) ? window.maximumWithdrawal : 10000;
         const amount = parseFloat(withdrawAmountInput?.value || 0);
-        if (!amount || amount < minWithdrawal) {
+        if (!amount || amount < 50) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
           notif.style.borderColor = 'var(--btn-danger)';
           notif.innerHTML = `
                         <div style="font-weight: 600;">Minimum Withdrawal</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Minimum withdrawal amount is $${minWithdrawal}</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
-        if (amount > maxWithdrawal) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Maximum Withdrawal</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Maximum withdrawal amount is $${maxWithdrawal}</div>
+                        <div style="font-size:13px; color:var(--text-secondary);">Minimum withdrawal amount is $50</div>
                     `;
           document.body.appendChild(notif);
           setTimeout(() => {
@@ -9172,55 +8287,28 @@
           return;
         }
         let address = '';
-        if (selectedWithdrawMethod === 'Mpesa') {
-          const phoneInput = document.getElementById('withdrawPhoneInput');
-          const rawPhone = phoneInput?.dataset?.rawValue || phoneInput?.value || '';
-          const cleanPhone = rawPhone.replace(/\D/g, '');
-          if (cleanPhone.length < 9) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
-                            <div style="font-weight: 600;">Invalid Phone</div>
-                            <div style="font-size:13px; color:var(--text-secondary);">Please enter a valid M-PESA phone number</div>
-                        `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            return;
-          }
-          address = `+254${cleanPhone}`;
-        } else {
-          const addrInput = document.getElementById('withdrawAddressInput');
-          if (!addrInput || !addrInput.value.trim()) {
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--btn-danger)';
-            notif.innerHTML = `
+        const addrInput = document.getElementById('withdrawAddressInput');
+        if (!addrInput || !addrInput.value.trim()) {
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--btn-danger)';
+          notif.innerHTML = `
                             <div style="font-weight: 600;">Invalid Address</div>
                             <div style="font-size:13px; color:var(--text-secondary);">Please enter your ${selectedWithdrawMethod} wallet address</div>
                         `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 3000);
-            return;
-          }
-          address = addrInput.value.trim();
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 3000);
+          return;
         }
+        address = addrInput.value.trim();
 
         // WITHDRAW ACCOUNT SELECTION PATCH START – deduct from selected account
         accountBalances[selectedWithdrawAccount] -= amount;
@@ -9610,501 +8698,6 @@
         }
       });
     }
-
-    // =============================================
-    // M-PESA STK - Complete original implementation with IDEMPOTENCY PROTECTION
-    // =============================================
-    function resetStkStatus() {
-      const container = document.getElementById('stkStatusContainer');
-      if (container) {
-        container.classList.remove('show');
-      }
-      if (stkPollingInterval) {
-        clearInterval(stkPollingInterval);
-        stkPollingInterval = null;
-      }
-      stkCheckoutRequestId = null;
-      const submitBtn = document.getElementById('submitMpesaStkBtn');
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Start secure deposit';
-      }
-    }
-
-    function showStkStatus(type, title, sub, detail, reference) {
-      const container = document.getElementById('stkStatusContainer');
-      if (!container) return;
-
-      container.classList.add('show');
-
-      const icon = document.getElementById('stkStatusIcon');
-      const titleEl = document.getElementById('stkStatusTitle');
-      const subEl = document.getElementById('stkStatusSub');
-      const detailEl = document.getElementById('stkStatusDetail');
-      const refEl = document.getElementById('stkStatusReference');
-
-      if (icon) {
-        icon.className = 'stk-icon';
-        if (type === 'pending') {
-          icon.classList.add('pending');
-          icon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        } else if (type === 'success') {
-          icon.classList.add('success');
-          icon.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-        } else if (type === 'failed') {
-          icon.classList.add('failed');
-          icon.innerHTML = '<i class="fa-solid fa-times-circle"></i>';
-        } else if (type === 'info') {
-          icon.style.color = 'var(--btn-primary)';
-          icon.innerHTML = '<i class="fa-solid fa-info-circle"></i>';
-          icon.className = 'stk-icon';
-        }
-      }
-
-      if (titleEl) titleEl.textContent = title;
-      if (subEl) subEl.textContent = sub;
-      if (detailEl) detailEl.textContent = detail || '';
-      if (refEl) {
-        if (reference) {
-          refEl.textContent = 'Reference: ' + reference;
-          refEl.style.display = 'block';
-        } else {
-          refEl.style.display = 'none';
-        }
-      }
-    }
-
-    const mpesaPhoneInput = document.getElementById('mpesaPhoneInput');
-    let realPhoneNumber = "";
-
-    if (mpesaPhoneInput) {
-      function updateMpesaDisplay() {
-        let masked = "";
-        for (let i = 0; i < realPhoneNumber.length; i++) {
-          if (i >= 3 && i <= 5) {
-            masked += "X";
-          } else {
-            masked += realPhoneNumber[i];
-          }
-        }
-        mpesaPhoneInput.value = masked;
-        mpesaPhoneInput.dataset.rawValue = realPhoneNumber;
-      }
-
-      mpesaPhoneInput.addEventListener("beforeinput", function(e) {
-        if (e.inputType === "insertText" && e.data && /^[0-9]$/.test(e.data)) {
-          if (realPhoneNumber.length >= 9) {
-            e.preventDefault();
-            return;
-          }
-          realPhoneNumber += e.data;
-          updateMpesaDisplay();
-          e.preventDefault();
-        }
-      });
-
-      mpesaPhoneInput.addEventListener("keydown", function(e) {
-        if (e.key === "Backspace") {
-          e.preventDefault();
-          if (realPhoneNumber.length > 0) {
-            realPhoneNumber = realPhoneNumber.slice(0, -1);
-          }
-          updateMpesaDisplay();
-        }
-      });
-
-      mpesaPhoneInput.addEventListener("paste", function(e) {
-        e.preventDefault();
-        const pasted = (e.clipboardData || window.clipboardData).getData('text');
-        const digitsOnly = pasted.replace(/\D/g, '');
-        if (digitsOnly.length > 0) {
-          const limited = digitsOnly.slice(0, 9);
-          realPhoneNumber = limited;
-          updateMpesaDisplay();
-        }
-      });
-
-      mpesaPhoneInput.addEventListener("focus", function() {
-        this.select();
-      });
-
-      mpesaPhoneInput.addEventListener("blur", function() {
-        updateMpesaDisplay();
-      });
-
-      updateMpesaDisplay();
-    }
-
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
-    // Track processed transaction IDs to prevent double crediting
-    let processedMpesaTransactions = new Set();
-
-    const submitMpesaStkBtn = document.getElementById('submitMpesaStkBtn');
-    if (submitMpesaStkBtn) {
-      submitMpesaStkBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-
-        // Guard against double-click submission
-        if (submitMpesaStkBtn.disabled) {
-            console.log('[MPESA] Submission already in progress, ignoring double-click.');
-            return;
-        }
-
-        resetStkStatus();
-
-        let phoneInput = document.getElementById('mpesaPhoneInput');
-        let rawPhone = phoneInput.dataset.rawValue || '';
-
-        if (!rawPhone || rawPhone.length < 9) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Invalid Phone</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Please enter a valid M-PESA phone number</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
-
-        const amountDisplay = document.getElementById('mpesaStkAmount');
-        const amountText = amountDisplay.textContent.replace('KES ', '').replace(/,/g, '').trim();
-        const amount = parseFloat(amountText) || 0;
-
-        // Use dynamic minimum deposit from Firebase
-        const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
-        const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-        const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
-        const maxKes = maxDeposit * USD_TO_KES;
-
-        if (amount < minKes) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Minimum Deposit</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Minimum deposit is KES ${minKes} ($${minDeposit})</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
-        if (amount > maxKes) {
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.style.borderColor = 'var(--btn-danger)';
-          notif.innerHTML = `
-                        <div style="font-weight: 600;">Maximum Deposit</div>
-                        <div style="font-size:13px; color:var(--text-secondary);">Maximum deposit is KES ${maxKes} ($${maxDeposit})</div>
-                    `;
-          document.body.appendChild(notif);
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 3000);
-          return;
-        }
-
-        // Disable button to prevent double submission
-        submitMpesaStkBtn.disabled = true;
-        submitMpesaStkBtn.textContent = 'Sending...';
-        showStkStatus('pending', 'Sending M-PESA prompt...', 'Please check your phone for the STK push', 'Sending request...', '');
-
-        const formattedPhone = '254' + rawPhone;
-
-        try {
-          const response = await fetch('/api/mpesa/stkpush', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              amount: amount,
-              phone: formattedPhone
-            })
-          });
-
-          const data = await response.json();
-
-          if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Could not send M-PESA prompt');
-          }
-
-          stkCheckoutRequestId = data.checkoutRequestId || data.externalReference || data.payheroReference;
-
-          showStkStatus(
-            'info',
-            'M-PESA prompt sent!',
-            'Please check your phone and enter your PIN',
-            `Amount: KES ${amount.toFixed(2)}`,
-            stkCheckoutRequestId
-          );
-
-          if (stkCheckoutRequestId) {
-            submitMpesaStkBtn.textContent = 'Waiting...';
-            startStkPolling(stkCheckoutRequestId);
-          }
-
-        } catch (error) {
-          console.error('STK Push error:', error);
-          showStkStatus(
-            'failed',
-            'Payment Failed',
-            error.message || 'Could not send M-PESA prompt',
-            'Please try again',
-            ''
-          );
-          submitMpesaStkBtn.disabled = false;
-          submitMpesaStkBtn.textContent = 'Start secure deposit';
-        }
-      });
-    }
-
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
-    function startStkPolling(checkoutRequestId) {
-      if (stkPollingInterval) {
-        clearInterval(stkPollingInterval);
-        stkPollingInterval = null;
-      }
-
-      let attempts = 0;
-      const maxAttempts = 30;
-
-      stkPollingInterval = setInterval(async () => {
-        attempts++;
-
-        try {
-          const response = await fetch(`/api/mpesa/status/${encodeURIComponent(checkoutRequestId)}`);
-          const data = await response.json();
-
-          if (!data.success) {
-            console.log('Status check failed:', data);
-            return;
-          }
-
-          const status = String(data.status || '').toUpperCase();
-
-          if (status === 'SUCCESS') {
-            clearInterval(stkPollingInterval);
-            stkPollingInterval = null;
-
-            const amountDisplay = document.getElementById('mpesaStkAmount');
-            const amountText = amountDisplay.textContent.replace('KES ', '').replace(/,/g, '').trim();
-            const kesAmount = parseFloat(amountText) || 0;
-            const usdAmount = kesAmount / USD_TO_KES;
-
-            // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
-            // Check if this transaction has already been processed
-            const txKey = `mpesa_${checkoutRequestId}`;
-            if (processedMpesaTransactions.has(txKey)) {
-              console.log(`[MPESA] Transaction ${checkoutRequestId} already processed, skipping credit.`);
-              // Update UI to show already processed
-              showStkStatus(
-                'success',
-                'Payment Already Processed',
-                `KES ${kesAmount.toLocaleString()} was already credited`,
-                `Receipt: ${data.providerReference || 'Confirmed'}`,
-                checkoutRequestId
-              );
-              const submitBtn = document.getElementById('submitMpesaStkBtn');
-              if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Start secure deposit';
-              }
-              return;
-            }
-
-            // Mark as processing immediately to prevent race conditions
-            processedMpesaTransactions.add(txKey);
-
-            // First, check if this transaction is already credited in the database
-            // by searching for an existing transaction with this checkoutRequestId
-            const existingTx = transactions.find(tx => 
-              tx.checkoutRequestId === checkoutRequestId && 
-              tx.type === 'deposit' &&
-              tx.paymentMethod === 'Mpesa'
-            );
-
-            if (existingTx && existingTx.credited === true) {
-              console.log(`[MPESA] Transaction ${checkoutRequestId} already credited in database, skipping.`);
-              showStkStatus(
-                'success',
-                'Payment Already Processed',
-                `KES ${kesAmount.toLocaleString()} was already credited`,
-                `Receipt: ${data.providerReference || 'Confirmed'}`,
-                checkoutRequestId
-              );
-              const submitBtn = document.getElementById('submitMpesaStkBtn');
-              if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Start secure deposit';
-              }
-              return;
-            }
-
-            // Check if we already have a pending transaction for this checkoutRequestId
-            if (existingTx && existingTx.credited !== true) {
-              // Update the existing transaction to completed and mark as credited
-              const txRef = ref(db, `users/${currentUser.uid}/transactions/${existingTx.id}`);
-              await update(txRef, {
-                status: 'completed',
-                credited: true,
-                creditedAt: Date.now(),
-                providerReference: data.providerReference || '',
-                completedAt: Date.now()
-              });
-              // Update in-memory
-              existingTx.status = 'completed';
-              existingTx.credited = true;
-              existingTx.creditedAt = Date.now();
-              existingTx.providerReference = data.providerReference || '';
-
-              // Update balance
-              accountBalances['real-usd'] = (accountBalances['real-usd'] || 0) + usdAmount;
-              await saveBalancesToFirebase();
-              updateAccountUI(currentAccountType);
-
-              console.log(`[MPESA] Updated existing transaction ${existingTx.id} to credited.`);
-            } else {
-              // Create new transaction and credit
-              await updateAccountBalance('real-usd', usdAmount, true);
-
-              await saveTransactionToFirebase({
-                type: 'deposit',
-                amount: usdAmount,
-                currency: 'USD',
-                accountType: 'real-usd',
-                paymentMethod: 'Mpesa',
-                phoneNumber: document.getElementById('mpesaPhoneInput').dataset.rawValue || '',
-                status: 'completed',
-                credited: true,
-                creditedAt: Date.now(),
-                kesAmount: kesAmount,
-                reference: data.providerReference || checkoutRequestId,
-                checkoutRequestId: checkoutRequestId
-              });
-            }
-
-            // Update UI
-            showStkStatus(
-              'success',
-              'Payment Successful!',
-              `KES ${kesAmount.toLocaleString()} deposited`,
-              `Receipt: ${data.providerReference || 'Confirmed'}`,
-              checkoutRequestId
-            );
-
-            const notif = document.createElement('div');
-            notif.className = 'trade-notification';
-            notif.style.borderColor = 'var(--success)';
-            notif.innerHTML = `
-              <div style="font-weight: 600;">M-PESA Payment Successful</div>
-              <div style="font-size:13px; color:var(--text-secondary);">KES ${kesAmount.toLocaleString()} deposited</div>
-            `;
-            document.body.appendChild(notif);
-            setTimeout(() => {
-              if (notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                  if (notif.parentNode) notif.remove();
-                }, 500);
-              }
-            }, 5000);
-
-            const submitBtn = document.getElementById('submitMpesaStkBtn');
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Start secure deposit';
-            }
-
-            setTimeout(() => {
-              closeAllPanels();
-              currentPanelStack = [];
-              history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-              if (buttons.market) buttons.market.classList.add('active');
-              if (chartOverlay) chartOverlay.classList.remove('active');
-              savePanelState(ROOT_PANEL, []);
-            }, 3000);
-
-            return;
-          } else if (status === 'FAILED' || status === 'CANCELLED' || status === 'CANCELED' || status === 'EXPIRED') {
-            clearInterval(stkPollingInterval);
-            stkPollingInterval = null;
-
-            showStkStatus(
-              'failed',
-              'Payment Cancelled',
-              'The M-PESA prompt was not completed',
-              'You can try again',
-              checkoutRequestId
-            );
-
-            const submitBtn = document.getElementById('submitMpesaStkBtn');
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Start secure deposit';
-            }
-            return;
-          }
-
-          if (attempts % 3 === 0) {
-            showStkStatus(
-              'pending',
-              'Waiting for payment...',
-              `Please check your phone and enter your PIN`,
-              `Waiting for confirmation...`,
-              checkoutRequestId
-            );
-          }
-
-        } catch (error) {
-          console.error('Status polling error:', error);
-        }
-
-        if (attempts >= maxAttempts) {
-          clearInterval(stkPollingInterval);
-          stkPollingInterval = null;
-
-          showStkStatus(
-            'failed',
-            'Payment Timed Out',
-            'The M-PESA prompt expired',
-            'Please try again',
-            checkoutRequestId
-          );
-
-          const submitBtn = document.getElementById('submitMpesaStkBtn');
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Start secure deposit';
-          }
-        }
-      }, 5000);
-    }
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
 
     // =============================================
     // IDENTITY VERIFICATION - With Telegram Upload
@@ -11058,13 +9651,13 @@
         }, 3000);
         return;
       }
-      if (amount < currentMinStake) {
+      if (amount < 1) {
         const notif = document.createElement('div');
         notif.className = 'trade-notification';
         notif.style.borderColor = 'var(--btn-danger)';
         notif.innerHTML = `
                     <div style="font-weight: 600;">Minimum Trade</div>
-                    <div style="font-size:13px; color:var(--text-secondary);">Minimum trade amount is $${currentMinStake}</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Minimum trade amount is $1</div>
                 `;
         document.body.appendChild(notif);
         setTimeout(() => {
@@ -11078,13 +9671,13 @@
         }, 3000);
         return;
       }
-      if (amount > currentMaxStake) {
+      if (amount > 1000) {
         const notif = document.createElement('div');
         notif.className = 'trade-notification';
         notif.style.borderColor = 'var(--btn-danger)';
         notif.innerHTML = `
                     <div style="font-weight: 600;">Maximum Trade</div>
-                    <div style="font-size:13px; color:var(--text-secondary);">Maximum trade amount is $${currentMaxStake}</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Maximum trade amount is $1000</div>
                 `;
         document.body.appendChild(notif);
         setTimeout(() => {
@@ -11636,30 +10229,8 @@
         }
 
         // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH START =====
-        // Only create this notification if the trade is NOT from the bot.
-        // This is the only change: we check isBot and skip creating the global popup.
-        if (!trade.isBot) {
-          const sideColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.innerHTML = `
-                        <span style="color: ${sideColor}; font-weight: 800;">${side}</span> 
-                        order opened for <strong>$${amount.toFixed(2)}</strong> 
-                        on <strong>${trade.symbol}</strong> @ ${entryPrice.toFixed(5)}
-                    `;
-          notif.style.borderColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
-          document.body.appendChild(notif);
-
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 4000);
-        }
+        // The bot panel shows the trade status via signalTitle and signalIndicator.
+        // The global floating notification is now completely removed for bot trades.
         // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH END =====
 
         console.log(
@@ -11808,121 +10379,12 @@
     }
 
     // =============================================
-    // DYNAMIC LIMITS UI UPDATE FUNCTIONS
-    // =============================================
-    function updateDepositMinUI(val) {
-      // Update any UI elements that display the deposit minimum
-      // For example, the KES deposit amount panel min label
-      updateKesDepositMinLabel(val);
-      // Update any other deposit min UI elements if needed
-    }
-
-    function updateKesDepositMinLabel(val) {
-      const minLabel = document.getElementById('depositAmountMinLabel');
-      if (minLabel && currentSelectedMethod === 'Mpesa') {
-        const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
-        minLabel.textContent = `Deposit amount (Min KES ${minKes} = $${val})`;
-      }
-      // Also update the custom input min if it's visible
-      const customInput = document.getElementById('customKesInput');
-      if (customInput) {
-        const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
-        if (currentSelectedMethod === 'Mpesa') {
-          customInput.min = minKes;
-        } else {
-          customInput.min = val;
-        }
-      }
-    }
-
-    function updateWithdrawalMinUI(val) {
-      const infoEl = document.getElementById('withdrawalMinInfo');
-      if (infoEl) {
-        infoEl.textContent = `Minimum withdrawal: $${val}`;
-      }
-      // Update the amount input min
-      const amountInput = document.getElementById('withdrawAmountInput');
-      if (amountInput) {
-        amountInput.min = val;
-        // If current value is below min, update it
-        const currentVal = parseFloat(amountInput.value);
-        if (!isNaN(currentVal) && currentVal < val) {
-          amountInput.value = val;
-          // Also update preset buttons visual state
-          const presets = document.querySelectorAll('.withdraw-preset-btn');
-          presets.forEach(btn => {
-            const presetVal = parseFloat(btn.getAttribute('data-amount'));
-            if (presetVal === val) {
-              btn.style.background = 'var(--bg-active)';
-              btn.style.border = '2px solid var(--btn-primary)';
-              btn.style.color = 'var(--text-white)';
-            } else {
-              btn.style.background = 'var(--bg-card)';
-              btn.style.border = '1px solid var(--border-light)';
-              btn.style.color = 'var(--text-secondary)';
-            }
-          });
-        }
-      }
-      // Update the presets: ensure at least one preset matches the minimum
-      const presets = document.querySelectorAll('.withdraw-preset-btn');
-      let hasMatchingPreset = false;
-      presets.forEach(btn => {
-        const presetVal = parseFloat(btn.getAttribute('data-amount'));
-        if (presetVal === val) {
-          hasMatchingPreset = true;
-        }
-      });
-      if (!hasMatchingPreset) {
-        // Add a new preset for the minimum if it doesn't exist
-        const container = document.querySelector('.withdraw-preset-btn').parentNode;
-        if (container) {
-          const newBtn = document.createElement('button');
-          newBtn.className = 'withdraw-preset-btn';
-          newBtn.setAttribute('data-amount', val);
-          newBtn.textContent = `$${val}`;
-          newBtn.style.background = 'var(--bg-active)';
-          newBtn.style.border = '2px solid var(--btn-primary)';
-          newBtn.style.color = 'var(--text-white)';
-          newBtn.style.borderRadius = '8px';
-          newBtn.style.padding = '6px 14px';
-          newBtn.style.fontSize = '12px';
-          newBtn.style.cursor = 'pointer';
-          newBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const presets = document.querySelectorAll('.withdraw-preset-btn');
-            presets.forEach(b => {
-              b.style.background = 'var(--bg-card)';
-              b.style.border = '1px solid var(--border-light)';
-              b.style.color = 'var(--text-secondary)';
-            });
-            newBtn.style.background = 'var(--bg-active)';
-            newBtn.style.border = '2px solid var(--btn-primary)';
-            newBtn.style.color = 'var(--text-white)';
-            if (withdrawAmountInput) {
-              withdrawAmountInput.value = val;
-            }
-          });
-          container.prepend(newBtn);
-        }
-      }
-    }
-
-    function updateWithdrawalMinFooterUI(val) {
-      const footerEl = document.getElementById('withdrawalMinFooter');
-      if (footerEl) {
-        footerEl.textContent = `Minimum withdrawal: $${val}`;
-      }
-    }
-
-    // =============================================
     // FINAL INITIALIZATION
     // =============================================
     console.log('[Dashboard] All systems initialized.');
     console.log('[Dashboard] Verification listener active. isVerified =', isVerified);
     console.log('[Transactions] Loaded', transactions.length, 'transactions.');
     console.log('[Trade History] Loaded', closedTrades.length, 'trades.');
-    console.log('[M-PESA STK] M-PESA STK Push functionality initialized with idempotency protection.');
     console.log('[Back Buttons] All back buttons fixed with History API.');
     console.log('[Telegram Upload] Telegram photo upload functionality integrated.');
     console.log('[Panel Restore] Panel restoration after refresh enabled.');
@@ -11944,32 +10406,6 @@
     console.log('[Withdrawal Sync] Transaction status auto-syncs with withdrawal status changes.');
     console.log('[Withdrawal Sync] Historical reconciliation runs on login to fix mismatched records.');
     // WITHDRAWAL TRANSACTION SYNC FIX END
-    // CUSTOM DEPOSIT AMOUNT FIX START - Log the fix
-    console.log('[Deposit Amount] Custom amount input now updates selected amount in real-time.');
-    console.log('[Deposit Amount] Manual input overrides preset selection.');
-    // CUSTOM DEPOSIT AMOUNT FIX END
-    // M-PESA TRANSACTION MASKING FIX START - Log the fix
-    console.log('[M-PESA Mask] M-PESA phone numbers masked in transaction history (712XXX678).');
-    // M-PESA TRANSACTION MASKING FIX END
-    // WITHDRAWAL AMOUNT COLOR FIX START - Log the fix
-    console.log('[Withdrawal Color] Withdrawal amounts now display in green.');
-    // WITHDRAWAL AMOUNT COLOR FIX END
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START - Log the fix
-    console.log('[MPESA Idempotency] Double-credit protection enabled for M-PESA transactions.');
-    console.log('[MPESA Idempotency] Transactions are tracked using checkoutRequestId.');
-    console.log('[MPESA Idempotency] Race conditions prevented with processing state tracking.');
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
-    // DEPOSIT BACK NAVIGATION FIX - Log the fix
-    console.log('[Deposit Back Nav] Deposit child panels now always return to Main Deposit.');
-    console.log('[Deposit Back Nav] Account Selection → Back → Main Deposit');
-    console.log('[Deposit Back Nav] Payment Method → Back → Main Deposit');
-    console.log('[Deposit Back Nav] Deposit Amount → Back → Main Deposit');
-
-    // ============================================================
-    // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
-    // ============================================================
-    // This is handled in the account selection card click handler.
-    // No additional code needed here.
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
@@ -12188,47 +10624,6 @@
     // ============================================================
     // ABOUT US NAVIGATION REMOVAL END
     // ============================================================
-
-    // ============================================================
-    // DYNAMIC LIMITS - Ensure initial load uses Firebase values
-    // ============================================================
-    // If we are already logged in, the listeners above will handle it.
-    // But we also need to ensure that the initial UI reflects the Firebase values.
-    // The listeners fire immediately on connection, but we also set a fallback.
-    setTimeout(() => {
-      // Ensure minimum values are set from Firebase or fallback to 5
-      if (window.minimumDeposit === undefined || window.minimumDeposit === null) {
-        window.minimumDeposit = 5;
-        console.log('[Dynamic Limits] Fallback deposit min = 5');
-      }
-      if (window.minimumWithdrawal === undefined || window.minimumWithdrawal === null) {
-        window.minimumWithdrawal = 50;
-        console.log('[Dynamic Limits] Fallback withdrawal min = 50');
-      }
-      if (window.maximumDeposit === undefined || window.maximumDeposit === null) {
-        window.maximumDeposit = 10000;
-        console.log('[Dynamic Limits] Fallback deposit max = 10000');
-      }
-      if (window.maximumWithdrawal === undefined || window.maximumWithdrawal === null) {
-        window.maximumWithdrawal = 10000;
-        console.log('[Dynamic Limits] Fallback withdrawal max = 10000');
-      }
-      if (window.currentMinStake === undefined || window.currentMinStake === null) {
-        window.currentMinStake = 5;
-        console.log('[Dynamic Limits] Fallback stake min = 5');
-      }
-      if (window.currentMaxStake === undefined || window.currentMaxStake === null) {
-        window.currentMaxStake = 1000;
-        console.log('[Dynamic Limits] Fallback stake max = 1000');
-      }
-      // Update UI
-      updateDepositMinUI(window.minimumDeposit);
-      updateWithdrawalMinUI(window.minimumWithdrawal);
-      updateWithdrawalMinFooterUI(window.minimumWithdrawal);
-      updateUsdtDepositMaxUI(window.maximumDeposit);
-      updateWithdrawalMaxUI(window.maximumWithdrawal);
-      updateStakeLimitsUI();
-    }, 500);
 
   </script>
 </body>
