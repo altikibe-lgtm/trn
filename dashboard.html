@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>GoldlineMarkets Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script type="text/javascript" src="https://s.tradingview.com/tv.js">
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js">
   </script>
   <style>
     /* RESET & BASE STYLING */
@@ -6327,6 +6327,18 @@
             // ====================================================================
 
             // ====================================================================
+            // BOT TRADE LIFECYCLE FIX START
+            // ====================================================================
+            // Restore any previously persisted active bot trade (from localStorage)
+            // so browser refresh does not lose an already-open bot trade.
+            // Any trade whose expiryTime has already passed is settled immediately.
+            restorePersistedActiveBotTrade();
+            ensureBotExpiryMonitorRunning();
+            // ====================================================================
+            // BOT TRADE LIFECYCLE FIX END
+            // ====================================================================
+
+            // ====================================================================
             // REFERRAL LINK FIX PATCH START
             // ====================================================================
             if (userData && userData.referralCode) {
@@ -6487,17 +6499,6 @@
             // DYNAMIC LIMITS PATCH END
             // ====================================================================
 
-            // ============================================================
-            // BOT TRADE LIFECYCLE FIX - RESTORE PERSISTED BOT TRADE
-            // ============================================================
-            setTimeout(() => {
-              restorePersistedBotTrade();
-              startBotExpiryMonitor();
-            }, 800);
-            // ============================================================
-            // END BOT TRADE LIFECYCLE FIX
-            // ============================================================
-
           } else {
             const newCopyId = generateCopyTradingId();
             accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
@@ -6636,6 +6637,18 @@
             // ---- End restore ----
 
             // ====================================================================
+            // BOT TRADE LIFECYCLE FIX START
+            // ====================================================================
+            // Restore any previously persisted active bot trade (from localStorage)
+            // so browser refresh does not lose an already-open bot trade.
+            // Any trade whose expiryTime has already passed is settled immediately.
+            restorePersistedActiveBotTrade();
+            ensureBotExpiryMonitorRunning();
+            // ====================================================================
+            // BOT TRADE LIFECYCLE FIX END
+            // ====================================================================
+
+            // ====================================================================
             // REFERRAL LINK FIX PATCH START
             // ====================================================================
             const referralLinkElement = document.getElementById('referralLink');
@@ -6754,17 +6767,6 @@
             // DYNAMIC LIMITS PATCH END
             // ====================================================================
 
-            // ============================================================
-            // BOT TRADE LIFECYCLE FIX - RESTORE PERSISTED BOT TRADE
-            // ============================================================
-            setTimeout(() => {
-              restorePersistedBotTrade();
-              startBotExpiryMonitor();
-            }, 800);
-            // ============================================================
-            // END BOT TRADE LIFECYCLE FIX
-            // ============================================================
-
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -6865,6 +6867,18 @@
               subscribeToSymbol(savedRobotInstrument);
           }
           // ---- End restore ----
+
+          // ====================================================================
+          // BOT TRADE LIFECYCLE FIX START
+          // ====================================================================
+          // Restore any previously persisted active bot trade (from localStorage)
+          // so browser refresh does not lose an already-open bot trade.
+          // Any trade whose expiryTime has already passed is settled immediately.
+          restorePersistedActiveBotTrade();
+          ensureBotExpiryMonitorRunning();
+          // ====================================================================
+          // BOT TRADE LIFECYCLE FIX END
+          // ====================================================================
 
           // ====================================================================
           // REFERRAL LINK FIX PATCH START
@@ -6985,17 +6999,6 @@
           // DYNAMIC LIMITS PATCH END
           // ====================================================================
 
-          // ============================================================
-          // BOT TRADE LIFECYCLE FIX - RESTORE PERSISTED BOT TRADE
-          // ============================================================
-          setTimeout(() => {
-            restorePersistedBotTrade();
-            startBotExpiryMonitor();
-          }, 800);
-          // ============================================================
-          // END BOT TRADE LIFECYCLE FIX
-          // ============================================================
-
         }
       } else {
         // User is logged out. Clear all user-specific trade state.
@@ -7109,8 +7112,6 @@
           // They persist in localStorage under olymmatix_bot_stats_${uid}.
           // NOTE: Risk management settings are intentionally NOT cleared on logout.
           // They persist in localStorage under olymmatix_risk_management_${uid}.
-          // NOTE: Persisted active bot trade is intentionally NOT cleared on logout.
-          // It will be settled on the next login via restorePersistedBotTrade().
           await signOut(auth);
           window.location.href = 'index.html';
         } catch (error) {
@@ -11901,177 +11902,6 @@
     let botOpeningTrade = false;
     let botCumulativeProfit = 0;
 
-    // ============================================================
-    // BOT TRADE LIFECYCLE FIX
-    // ============================================================
-    // Dedicated persistent expiry monitor, independent of botRunning.
-    // Scans activeTrades for running bot trades whose expiry has arrived.
-    // Also persists the running bot trade so a browser refresh can restore it.
-    // ============================================================
-    let botExpiryMonitorInterval = null;
-    const BOT_ACTIVE_TRADE_KEY_PREFIX = 'olymmatix_active_bot_trade_';
-
-    function getActiveBotTradeKey() {
-      return currentUser
-        ? `${BOT_ACTIVE_TRADE_KEY_PREFIX}${currentUser.uid}`
-        : `${BOT_ACTIVE_TRADE_KEY_PREFIX}guest`;
-    }
-
-    function persistActiveBotTrade(trade) {
-      try {
-        const key = getActiveBotTradeKey();
-        if (trade) {
-          localStorage.setItem(key, JSON.stringify(trade));
-        } else {
-          localStorage.removeItem(key);
-        }
-      } catch (e) {
-        console.warn('[Bot Persist] Could not persist active trade:', e);
-      }
-    }
-
-    function loadPersistedActiveBotTrade() {
-      try {
-        const raw = localStorage.getItem(getActiveBotTradeKey());
-        if (!raw) return null;
-        const t = JSON.parse(raw);
-        if (!t || typeof t !== 'object') return null;
-        if (t.isBot !== true) return null;
-        if (t.status !== 'running') return null;
-        if (typeof t.expiryTime !== 'number') return null;
-        return t;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function clearPersistedActiveBotTrade() {
-      try {
-        localStorage.removeItem(getActiveBotTradeKey());
-      } catch (e) {}
-    }
-
-    function startBotExpiryMonitor() {
-      if (botExpiryMonitorInterval) return;
-      botExpiryMonitorInterval = setInterval(() => {
-        const now = Date.now();
-        for (let i = 0; i < activeTrades.length; i++) {
-          const t = activeTrades[i];
-          if (t.isBot === true && t.status === 'running' && t.expiryTime <= now) {
-            closeBotTradeById(t.id);
-          }
-        }
-      }, 1000);
-      console.log('[Bot Expiry Monitor] Started (persistent, independent of botRunning).');
-    }
-
-    function stopBotExpiryMonitorIfIdle() {
-      const hasRunningBotTrade = activeTrades.some(
-        t => t.isBot === true && t.status === 'running'
-      );
-      if (!hasRunningBotTrade && botExpiryMonitorInterval) {
-        clearInterval(botExpiryMonitorInterval);
-        botExpiryMonitorInterval = null;
-        console.log('[Bot Expiry Monitor] Stopped (no running bot trades).');
-      }
-    }
-
-    async function closeBotTradeById(tradeId) {
-      const idx = activeTrades.findIndex(t => t.id === tradeId && t.isBot === true);
-      if (idx === -1) return;
-      const trade = activeTrades[idx];
-      if (trade.status !== 'running') return;
-
-      trade.status = 'closing';
-
-      try {
-        const isWin = trade.result === 'WIN';
-        const profit = typeof trade.profit === 'number' ? trade.profit : 0;
-        const stake = trade.amount;
-
-        if (isWin) {
-          accountBalances[botExecutionAccount] += stake + profit;
-        }
-
-        await saveBalancesToFirebase();
-
-        if (botRunning) {
-          if (isWin) { botTotalProfit += profit; botWinCount++; }
-          else { botTotalProfit += profit; botLossCount++; }
-          botCumulativeProfit += profit;
-          botTradeCount++;
-          botTradeCountEl.textContent = botTradeCount;
-          botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
-          botLossCountEl.textContent = botLossCount;
-          if (botCumulativeProfitDisplay) {
-            botCumulativeProfitDisplay.style.color =
-              botCumulativeProfit >= 0 ? 'var(--success)' : 'var(--btn-danger)';
-            botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
-          }
-          saveBotStatsToLocalStorage();
-        }
-
-        trade.status = 'closed';
-        trade.closeTime = Date.now();
-        trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
-
-        activeTrades.splice(idx, 1);
-        if (!closedTrades.some(t => t.id === trade.id)) {
-          closedTrades.push({ ...trade });
-        }
-        await saveTradeHistoryToFirebase(closedTrades);
-        updateTradeDisplay();
-        updateAccountUI(currentAccountType);
-
-        if (botActiveTrade && botActiveTrade.id === trade.id) {
-          botActiveTrade = null;
-        }
-        clearPersistedActiveBotTrade();
-
-        console.log(`[BOT] Trade finalized: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`);
-
-        if (botRunning && !botActiveTrade) {
-          setTimeout(() => {
-            if (botRunning && !botActiveTrade) executeBotTrade();
-          }, 1000);
-        }
-
-        stopBotExpiryMonitorIfIdle();
-      } catch (e) {
-        console.error('[BOT] Error finalizing trade:', e);
-        trade.status = 'running';
-      }
-    }
-
-    function restorePersistedBotTrade() {
-      const persisted = loadPersistedActiveBotTrade();
-      if (!persisted) return;
-      if (activeTrades.some(t => t.id === persisted.id)) return;
-
-      const trade = {
-        ...persisted,
-        status: 'running'
-      };
-
-      activeTrades.push(trade);
-      botActiveTrade = trade;
-
-      console.log('[Bot Restore] Restored persisted bot trade:', trade.id,
-        '| expiryTime:', new Date(trade.expiryTime).toISOString(),
-        '| result (pre-decided):', trade.result,
-        '| profit (pre-decided):', trade.profit);
-
-      if (trade.expiryTime <= Date.now()) {
-        closeBotTradeById(trade.id);
-      } else {
-        startBotExpiryMonitor();
-        updateTradeDisplay();
-      }
-    }
-    // ============================================================
-    // END BOT TRADE LIFECYCLE FIX
-    // ============================================================
-
     const startRobotBtn = document.getElementById('startRobotBtn');
     const botStatus = document.getElementById('botStatus');
     const botTradeCountEl = document.getElementById('botTradeCount');
@@ -12105,6 +11935,142 @@
         return false;
       }
     }
+
+    // ====================================================================
+    // BOT TRADE LIFECYCLE FIX START
+    // ====================================================================
+    // The following additions make an already-open bot trade persist and
+    // settle independently of `botRunning` and `botActiveTrade`:
+    //
+    //  - Active bot trades are persisted to localStorage.
+    //  - On login/refresh, any persisted bot trade is restored into
+    //    `activeTrades`, so it continues toward its original expiryTime.
+    //  - If its expiryTime has already passed during refresh, it is
+    //    settled immediately using its already-stored result/profit.
+    //  - A standalone expiry monitor scans `activeTrades` for any
+    //    `isBot && status === 'running' && expiryTime <= Date.now()`
+    //    trade and settles it, regardless of botRunning / botActiveTrade.
+    // ====================================================================
+
+    const BOT_ACTIVE_TRADE_KEY_PREFIX = 'olymmatix_active_bot_trade_';
+
+    function getBotActiveTradeKey() {
+      if (!currentUser) return null;
+      return `${BOT_ACTIVE_TRADE_KEY_PREFIX}${currentUser.uid}`;
+    }
+
+    function persistActiveBotTrade() {
+      const key = getBotActiveTradeKey();
+      if (!key) return;
+      try {
+        // Persist only the currently running bot trade (if any).
+        const running = activeTrades.find(t => t.isBot === true && t.status === 'running');
+        if (running) {
+          localStorage.setItem(key, JSON.stringify(running));
+          console.log('[Bot Lifecycle] Persisted active bot trade:', running.id);
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch (e) {
+        console.warn('[Bot Lifecycle] Could not persist active bot trade:', e);
+      }
+    }
+
+    function clearPersistedActiveBotTrade() {
+      const key = getBotActiveTradeKey();
+      if (!key) return;
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {}
+    }
+
+    function restorePersistedActiveBotTrade() {
+      const key = getBotActiveTradeKey();
+      if (!key) return;
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) return;
+        const trade = JSON.parse(stored);
+        if (!trade || typeof trade !== 'object') return;
+        if (trade.isBot !== true || trade.status !== 'running') {
+          localStorage.removeItem(key);
+          return;
+        }
+        // Avoid duplicating an already restored trade.
+        if (activeTrades.some(t => t.id === trade.id)) {
+          return;
+        }
+        // Restore the trade into activeTrades.
+        activeTrades.push(trade);
+        botActiveTrade = trade;
+        updateTradeDisplay();
+        console.log('[Bot Lifecycle] Restored active bot trade from localStorage:', trade.id, 'expiryTime:', trade.expiryTime);
+
+        // If already expired, settle it immediately using its stored result/profit.
+        if (trade.expiryTime <= Date.now()) {
+          console.log('[Bot Lifecycle] Restored bot trade already expired, settling now.');
+          // We reuse closeBotTrade by ensuring botActiveTrade points to it.
+          botActiveTrade = trade;
+          // Close regardless of botRunning. closeBotTrade already handles
+          // the "bot stopped" path (settle balance, do not touch session stats).
+          closeBotTrade();
+        }
+      } catch (e) {
+        console.warn('[Bot Lifecycle] Could not restore active bot trade:', e);
+      }
+    }
+
+    // Standalone expiry monitor for bot trades.
+    // Runs independently of botRunning and botActiveTrade.
+    let botExpiryMonitorInterval = null;
+
+    function ensureBotExpiryMonitorRunning() {
+      if (botExpiryMonitorInterval) return;
+      botExpiryMonitorInterval = setInterval(() => {
+        // Find any running bot trade whose expiry has passed.
+        const now = Date.now();
+        const expired = activeTrades.filter(t =>
+          t.isBot === true &&
+          t.status === 'running' &&
+          typeof t.expiryTime === 'number' &&
+          t.expiryTime <= now
+        );
+        if (expired.length === 0) {
+          // Nothing to settle right now.
+          return;
+        }
+        // Settle each expired bot trade exactly once.
+        expired.forEach(trade => {
+          // Point botActiveTrade at the trade so closeBotTrade operates on it.
+          // closeBotTrade is idempotent (checks status/guards) so this is safe.
+          if (!botActiveTrade || botActiveTrade.id !== trade.id) {
+            botActiveTrade = trade;
+          }
+          // Only trigger close if not already in the middle of a close.
+          if (!botClosingTrade) {
+            closeBotTrade();
+          }
+        });
+      }, 1000);
+      console.log('[Bot Lifecycle] Expiry monitor started (independent of botRunning).');
+    }
+
+    function stopBotExpiryMonitorIfIdle() {
+      // The expiry monitor is intentionally allowed to remain running while
+      // any bot trade is active. It is cheap (single 1s interval) and it
+      // guarantees that a stopped bot's open trade still settles at expiry.
+      // We only stop it when there is no running bot trade AND no bot session
+      // is active, to avoid an orphan interval forever.
+      const hasRunningBotTrade = activeTrades.some(t => t.isBot === true && t.status === 'running');
+      if (!hasRunningBotTrade && !botRunning && botExpiryMonitorInterval) {
+        clearInterval(botExpiryMonitorInterval);
+        botExpiryMonitorInterval = null;
+        console.log('[Bot Lifecycle] Expiry monitor stopped (no running bot trade and bot not running).');
+      }
+    }
+    // ====================================================================
+    // BOT TRADE LIFECYCLE FIX END
+    // ====================================================================
 
     // =============================================
     // BOT START/STOP LOGIC (modified for persistence)
@@ -12191,10 +12157,11 @@
         // TRADE EXPIRY PERSISTENCE FIX END
       }, 1000);
 
-      // Ensure the persistent expiry monitor is running.
-      startBotExpiryMonitor();
-
       saveBotRunningState(true);
+
+      // BOT TRADE LIFECYCLE FIX START - ensure the independent expiry monitor is alive.
+      ensureBotExpiryMonitorRunning();
+      // BOT TRADE LIFECYCLE FIX END
 
       setTimeout(() => {
         if (botRunning && !botActiveTrade) {
@@ -12209,15 +12176,22 @@
     function stopBotAndPersist(reason) {
       if (!botRunning) return;
       botRunning = false;
+      // ====================================================================
+      // BOT TRADE LIFECYCLE FIX START
+      // ====================================================================
+      // IMPORTANT: Do NOT clear the expiry monitor here if a running bot
+      // trade still exists. Stopping new trade generation must not stop
+      // expiry settlement of an already-open bot trade.
+      // ====================================================================
       if (botInterval) {
         clearInterval(botInterval);
         botInterval = null;
       }
-      // ============================================================
-      // DO NOT clear botExpiryMonitorInterval here.
-      // An already-open bot trade must still be allowed to expire.
-      // The monitor self-stops via stopBotExpiryMonitorIfIdle().
-      // ============================================================
+      // Keep the standalone expiry monitor alive while a bot trade is still open.
+      ensureBotExpiryMonitorRunning();
+      // ====================================================================
+      // BOT TRADE LIFECYCLE FIX END
+      // ====================================================================
       if (signalIndicator) {
         signalIndicator.classList.remove('spinning');
         signalIndicator.style.borderColor = 'rgba(255, 255, 255, 0.2)';
@@ -12314,10 +12288,11 @@
         // A manual stop clears the persisted statistics, and we must
         // not resurrect them here.
         console.log('[Bot Restore] No running state found, bot remains stopped. Statistics not restored.');
-        // Still ensure the persistent expiry monitor is alive so any
-        // running bot trade (from a stopped bot) can settle.
-        startBotExpiryMonitor();
-        restorePersistedBotTrade();
+        // BOT TRADE LIFECYCLE FIX START
+        // Even if the bot is stopped, an already-open bot trade must still
+        // reach expiry and settle. Ensure the expiry monitor is alive.
+        ensureBotExpiryMonitorRunning();
+        // BOT TRADE LIFECYCLE FIX END
         return;
       }
 
@@ -12360,6 +12335,9 @@
 
       if (botRunning) {
         console.log('[Bot Restore] Bot already running, no action needed.');
+        // BOT TRADE LIFECYCLE FIX START
+        ensureBotExpiryMonitorRunning();
+        // BOT TRADE LIFECYCLE FIX END
         return;
       }
 
@@ -12370,6 +12348,13 @@
       botActiveTrade = null;
       botOpeningTrade = false;
       botClosingTrade = false;
+
+      // BOT TRADE LIFECYCLE FIX START
+      // Restore any previously persisted active bot trade first.
+      // This is the same restoration used during login.
+      restorePersistedActiveBotTrade();
+      ensureBotExpiryMonitorRunning();
+      // BOT TRADE LIFECYCLE FIX END
 
       botRunning = true;
       startRobotBtn.textContent = 'Stop trading';
@@ -12386,11 +12371,6 @@
         }
       }, 1000);
 
-      // Ensure the persistent expiry monitor is running, and restore any
-      // persisted bot trade (settles immediately if already expired).
-      startBotExpiryMonitor();
-      restorePersistedBotTrade();
-
       setTimeout(() => {
         if (botRunning && !botActiveTrade) {
           executeBotTrade();
@@ -12403,18 +12383,6 @@
     // =============================================
     // EXECUTE BOT TRADE (with Firebase win rate)
     // =============================================
-    // ============================================================
-    // STRICT SURGICAL CHANGE — BOT TRADE OUTCOME DECIDED AT OPEN
-    // ============================================================
-    // The final WIN/LOSS result and final profit/loss are now
-    // determined IMMEDIATELY when the bot trade is opened, using
-    // the existing rules (WIN => profit = stake * 0.70,
-    // LOSS => profit = -stake). The trade object stores `result`
-    // and `profit` right away. The trade may still visually remain
-    // OPEN until its expiry, but its outcome is fixed forever.
-    // Settlement of the account balance + bot statistics happens
-    // exactly ONCE at expiry (see closeBotTradeById).
-    // ============================================================
     async function executeBotTrade() {
       if (botOpeningTrade || botClosingTrade) {
         console.log('[BOT] Trade operation in progress, skipping');
@@ -12443,7 +12411,7 @@
         console.log('[BOT] Active trade exists, checking expiry...');
         const now = Date.now();
         if (botActiveTrade.expiryTime <= now) {
-          await closeBotTradeById(botActiveTrade.id);
+          await closeBotTrade();
         }
         return;
       }
@@ -12504,25 +12472,9 @@
           status: 'pending'
         });
 
-        // Deduct the stake now (existing behavior).
         accountBalances[botExecutionAccount] -= amount;
         await saveBalancesToFirebase();
         updateAccountUI(currentAccountType);
-
-        // ============================================================
-        // STRICT SURGICAL CHANGE: Decide the final outcome NOW.
-        // ============================================================
-        const probability = winRatePercent / 100;
-        const isWin = Math.random() < probability;
-        let decidedResult = null;
-        let decidedProfit = 0;
-        if (isWin) {
-          decidedResult = 'WIN';
-          decidedProfit = amount * 0.70;
-        } else {
-          decidedResult = 'LOSS';
-          decidedProfit = -amount;
-        }
 
         const durationInSeconds = robotCurrentDuration;
         const expiryTime = Date.now() + (durationInSeconds * 1000);
@@ -12536,8 +12488,8 @@
           entryTime: Date.now(),
           expiryTime: expiryTime,
           status: 'running',
-          result: decidedResult,
-          profit: decidedProfit,
+          result: null,
+          profit: 0,
           closePrice: null,
           closeTime: null,
           isBot: true,
@@ -12547,11 +12499,12 @@
 
         botActiveTrade = trade;
         activeTrades.push(trade);
-        // Persist the running bot trade so refresh can restore it.
-        persistActiveBotTrade(trade);
-        // Ensure the persistent expiry monitor is alive.
-        startBotExpiryMonitor();
         updateTradeDisplay();
+
+        // BOT TRADE LIFECYCLE FIX START - persist the active bot trade
+        persistActiveBotTrade();
+        ensureBotExpiryMonitorRunning();
+        // BOT TRADE LIFECYCLE FIX END
 
         if (signalTitle) {
           signalTitle.textContent = `Trade in progress... ${side}`;
@@ -12560,8 +12513,35 @@
           signalIndicator.classList.add('spinning');
         }
 
+        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH START =====
+        // Only create this notification if the trade is NOT from the bot.
+        // This is the only change: we check isBot and skip creating the global popup.
+        if (!trade.isBot) {
+          const sideColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.innerHTML = `
+                        <span style="color: ${sideColor}; font-weight: 800;">${side}</span> 
+                        order opened for <strong>$${amount.toFixed(2)}</strong> 
+                        on <strong>${trade.symbol}</strong> @ ${entryPrice.toFixed(5)}
+                    `;
+          notif.style.borderColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
+          document.body.appendChild(notif);
+
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 4000);
+        }
+        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH END =====
+
         console.log(
-          `[BOT] Trade opened: ${side} ${trade.symbol} @ ${entryPrice} | Amount: $${amount} | Duration: ${durationInSeconds}s | Account: ${botExecutionAccount} | WinRate: ${winRatePercent}% | Pre-decided result: ${decidedResult} | Pre-decided profit: $${decidedProfit.toFixed(2)}`
+          `[BOT] Trade opened: ${side} ${trade.symbol} @ ${entryPrice} | Amount: $${amount} | Duration: ${durationInSeconds}s | Account: ${botExecutionAccount} | WinRate: ${winRatePercent}%`
         );
 
       } catch (error) {
@@ -12572,26 +12552,138 @@
     }
 
     // =============================================
-    // CLOSE BOT TRADE (finalization only, legacy pointer-based)
+    // CLOSE BOT TRADE (with stopped-bot expiry support)
     // =============================================
-    // ============================================================
-    // STRICT SURGICAL CHANGE — EXPIRY ONLY FINALIZES THE TRADE
-    // ============================================================
-    // This legacy function delegates to closeBotTradeById() so that
-    // the settlement path is identical regardless of whether the
-    // trade is identified by botActiveTrade or by activeTrades scan.
-    // ============================================================
     async function closeBotTrade() {
       if (!botActiveTrade || botClosingTrade) return;
-      const trade = botActiveTrade;
-      if (trade.status !== 'running') {
-        console.log('[BOT] Trade already finalized, skipping close.');
-        botActiveTrade = null;
-        return;
-      }
       botClosingTrade = true;
+
       try {
-        await closeBotTradeById(trade.id);
+        const trade = botActiveTrade;
+        const winRatePercent = trade.winRateUsed !== undefined ? trade.winRateUsed : 70;
+        const probability = winRatePercent / 100;
+        const isWin = Math.random() < probability;
+        const stake = trade.amount;
+        let profit = 0;
+
+        // TRADE EXPIRY PERSISTENCE FIX START
+        // Only update the in-memory session statistics if the bot is still
+        // considered "running" for statistics purposes. If the user manually
+        // stopped the bot, the statistics were already reset, and we must not
+        // re-populate them from this late-closing trade.
+        if (botRunning) {
+          if (isWin) {
+            profit = stake * 0.70;
+            accountBalances[botExecutionAccount] += stake + profit;
+            botTotalProfit += profit;
+            botWinCount++;
+          } else {
+            profit = -stake;
+            botTotalProfit += profit;
+            botLossCount++;
+          }
+
+          botCumulativeProfit += profit;
+
+          await saveBalancesToFirebase();
+          trade.result = isWin ? 'WIN' : 'LOSS';
+          trade.profit = profit;
+          trade.status = 'closed';
+          trade.closeTime = Date.now();
+          trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
+          botTradeCount++;
+
+          botTradeCountEl.textContent = botTradeCount;
+          botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
+          botLossCountEl.textContent = botLossCount;
+
+          if (botCumulativeProfitDisplay) {
+            const color = botCumulativeProfit >= 0 ? 'var(--success)' : 'var(--btn-danger)';
+            botCumulativeProfitDisplay.style.color = color;
+            botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
+          }
+
+          updateAccountUI(currentAccountType);
+        } else {
+          // Bot was stopped while this trade was running.
+          // Settle the balance exactly once, but do NOT touch session statistics.
+          if (isWin) {
+            profit = stake * 0.70;
+            accountBalances[botExecutionAccount] += stake + profit;
+          } else {
+            profit = -stake;
+          }
+
+          await saveBalancesToFirebase();
+          trade.result = isWin ? 'WIN' : 'LOSS';
+          trade.profit = profit;
+          trade.status = 'closed';
+          trade.closeTime = Date.now();
+          trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
+
+          updateAccountUI(currentAccountType);
+
+          console.log(
+            `[BOT] Late-closed trade (bot was stopped): ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`
+          );
+        }
+        // TRADE EXPIRY PERSISTENCE FIX END
+
+        const idx = activeTrades.findIndex(t => t.id === trade.id);
+        if (idx !== -1) activeTrades.splice(idx, 1);
+        // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
+        if (!closedTrades.some(t => t.id === trade.id)) {
+          closedTrades.push({ ...trade });
+        }
+        // TRADE EXPIRY PERSISTENCE FIX END
+        await saveTradeHistoryToFirebase(closedTrades);
+        updateTradeDisplay();
+
+        // BOT TRADE LIFECYCLE FIX START
+        // Remove the persisted active bot trade and update the monitor.
+        clearPersistedActiveBotTrade();
+        stopBotExpiryMonitorIfIdle();
+        // BOT TRADE LIFECYCLE FIX END
+
+        // Save bot statistics to localStorage after counters are updated,
+        // but only if the bot is still running.
+        if (botRunning) {
+          saveBotStatsToLocalStorage();
+        }
+
+        console.log(
+          `[BOT] Trade closed: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)} | WinRate: ${winRatePercent}%`
+        );
+
+        botActiveTrade = null;
+
+        if (signalTitle) {
+          signalTitle.textContent = 'Search for a signal';
+        }
+        if (signalIndicator) {
+          signalIndicator.classList.remove('spinning');
+          signalIndicator.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          signalIndicator.style.borderTopColor = '#ffffff';
+        }
+
+        const checkResult = checkStopLossTakeProfit();
+        if (checkResult) {
+          stopBot(checkResult);
+          return;
+        }
+
+        // Only open a new trade if the bot is still running.
+        if (botRunning) {
+          setTimeout(() => {
+            if (botRunning && !botActiveTrade) {
+              executeBotTrade();
+            }
+          }, 1000);
+        } else {
+          console.log('[BOT] Bot is stopped. No new trade will be opened.');
+        }
+      } catch (error) {
+        console.error('[BOT] Error closing trade:', error);
       } finally {
         botClosingTrade = false;
       }
@@ -12647,7 +12739,10 @@
     // DYNAMIC LIMITS UI UPDATE FUNCTIONS
     // =============================================
     function updateDepositMinUI(val) {
+      // Update any UI elements that display the deposit minimum
+      // For example, the KES deposit amount panel min label
       updateKesDepositMinLabel(val);
+      // Update any other deposit min UI elements if needed
     }
 
     function updateKesDepositMinLabel(val) {
@@ -12656,6 +12751,7 @@
         const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
         minLabel.textContent = `Deposit amount (Min KES ${minKes} = $${val})`;
       }
+      // Also update the custom input min if it's visible
       const customInput = document.getElementById('customKesInput');
       if (customInput) {
         const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
@@ -12672,12 +12768,15 @@
       if (infoEl) {
         infoEl.textContent = `Minimum withdrawal: $${val}`;
       }
+      // Update the amount input min
       const amountInput = document.getElementById('withdrawAmountInput');
       if (amountInput) {
         amountInput.min = val;
+        // If current value is below min, update it
         const currentVal = parseFloat(amountInput.value);
         if (!isNaN(currentVal) && currentVal < val) {
           amountInput.value = val;
+          // Also update preset buttons visual state
           const presets = document.querySelectorAll('.withdraw-preset-btn');
           presets.forEach(btn => {
             const presetVal = parseFloat(btn.getAttribute('data-amount'));
@@ -12693,6 +12792,7 @@
           });
         }
       }
+      // Update the presets: ensure at least one preset matches the minimum
       const presets = document.querySelectorAll('.withdraw-preset-btn');
       let hasMatchingPreset = false;
       presets.forEach(btn => {
@@ -12702,6 +12802,7 @@
         }
       });
       if (!hasMatchingPreset) {
+        // Add a new preset for the minimum if it doesn't exist
         const container = document.querySelector('.withdraw-preset-btn').parentNode;
         if (container) {
           const newBtn = document.createElement('button');
@@ -12755,46 +12856,70 @@
     console.log('[Panel Restore] Panel restoration after refresh enabled.');
     console.log('[WinRate] Firebase win‑rate listener active. Source of truth enabled.');
     console.log('[Referral] Referral link fixed: reads from users/{uid}/referralCode. Copy uses same link.');
+    // WITHDRAWAL ACTIVATION FINAL FIX START - Activation logging
     console.log('[Activation] Account activation system initialized. isAccountActivated:', isAccountActivated);
     console.log('[Activation] Withdrawal is gated by successful deposit history, not balance.');
+    // WITHDRAWAL ACTIVATION FINAL FIX END
+    // REFERRAL COUNT FIX START - Log initialization
     console.log('[Referral Count] Referral count listener initialized. Count updates in real-time.');
+    // REFERRAL COUNT FIX END
+    // MARKET INSTRUMENT NAVIGATION FIX START - Log the fix
     console.log('[Market Instrument] Instrument selection now stays on Market when changing from Market view.');
     console.log('[Market Instrument] Robot Settings remain open only when accessed from Robot view.');
+    // MARKET INSTRUMENT NAVIGATION FIX END
+    // WITHDRAWAL TRANSACTION SYNC FIX START - Log the fix
     console.log('[Withdrawal Sync] Withdrawal status synchronization initialized.');
     console.log('[Withdrawal Sync] Transaction status auto-syncs with withdrawal status changes.');
     console.log('[Withdrawal Sync] Historical reconciliation runs on login to fix mismatched records.');
+    // WITHDRAWAL TRANSACTION SYNC FIX END
+    // CUSTOM DEPOSIT AMOUNT FIX START - Log the fix
     console.log('[Deposit Amount] Custom amount input now updates selected amount in real-time.');
     console.log('[Deposit Amount] Manual input overrides preset selection.');
+    // CUSTOM DEPOSIT AMOUNT FIX END
+    // M-PESA TRANSACTION MASKING FIX START - Log the fix
     console.log('[M-PESA Mask] M-PESA phone numbers masked in transaction history (712XXX678).');
+    // M-PESA TRANSACTION MASKING FIX END
+    // WITHDRAWAL AMOUNT COLOR FIX START - Log the fix
     console.log('[Withdrawal Color] Withdrawal amounts now display in green.');
+    // WITHDRAWAL AMOUNT COLOR FIX END
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START - Log the fix
     console.log('[MPESA Idempotency] Double-credit protection enabled for M-PESA transactions.');
     console.log('[MPESA Idempotency] Transactions are tracked using checkoutRequestId.');
     console.log('[MPESA Idempotency] Race conditions prevented with processing state tracking.');
+    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
+    // DEPOSIT BACK NAVIGATION FIX - Log the fix
     console.log('[Deposit Back Nav] Deposit child panels now always return to Main Deposit.');
     console.log('[Deposit Back Nav] Account Selection → Back → Main Deposit');
     console.log('[Deposit Back Nav] Payment Method → Back → Main Deposit');
     console.log('[Deposit Back Nav] Deposit Amount → Back → Main Deposit');
+    // ROBOT SETTINGS EXECUTION ACCOUNT INLINE SELECTOR - Log
     console.log('[Robot Exec] Execution account inline selector restored. Selecting an account collapses the list and keeps Robot Settings open.');
+    // ROBOT SETTINGS EXECUTION ACCOUNT GUARD - Log
     console.log('[Robot Exec] General .acc-select-card handler now ignores cards inside #inlineExecutionAccounts.');
+    // PANEL PERSISTENCE FIX - Log
     console.log('[Panel Persist] Panel state is now preserved during authentication initialization.');
     console.log('[Panel Persist] Saved panel is NOT overwritten with Market during startup.');
     console.log('[Panel Persist] restorePanelAfterRefresh() will restore the exact panel after refresh.');
+    // RISK PERSISTENCE FIX - Log
     console.log('[Risk Persist] Risk management values (Stop Loss / Take Profit) now persist across refresh.');
     console.log('[Risk Persist] Values are stored per-user under olymmatix_risk_management_{uid}.');
+    // TRADE EXPIRY PERSISTENCE FIX START - Log
     console.log('[Trade Expiry] Expired bot trades now close even if the bot was stopped.');
     console.log('[Trade Expiry] Late-closed trades settle balances exactly once.');
     console.log('[Trade Expiry] History limit increased to 15. Firebase is the source of truth.');
     console.log('[Trade Expiry] Duplicate history entries prevented by trade.id check.');
-    console.log('[Bot Lifecycle] Bot trade WIN/LOSS and final profit/loss are now determined at OPEN.');
-    console.log('[Bot Lifecycle] Expiry only finalizes/settles the already-decided outcome.');
-    console.log('[Bot Lifecycle] Stopping the bot does not cancel an existing running trade.');
-    console.log('[Bot Lifecycle] Stopping the bot does not prevent an existing trade from expiring.');
-    console.log('[Bot Lifecycle] Persistent bot expiry monitor is now independent of botRunning.');
-    console.log('[Bot Lifecycle] Active bot trade is persisted to localStorage and restored after refresh.');
+    // TRADE EXPIRY PERSISTENCE FIX END
+    // BOT TRADE LIFECYCLE FIX START - Log
+    console.log('[Bot Lifecycle] Active bot trade now persists across refresh via localStorage.');
+    console.log('[Bot Lifecycle] Standalone expiry monitor settles running bot trades independent of botRunning.');
+    console.log('[Bot Lifecycle] Stopping the bot no longer cancels an already-open bot trade.');
+    // BOT TRADE LIFECYCLE FIX END
 
     // ============================================================
     // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
     // ============================================================
+    // This is handled in the account selection card click handler.
+    // No additional code needed here.
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
@@ -12819,12 +12944,6 @@
     // =============================================
     setTimeout(() => {
       const shouldRun = loadBotRunningState();
-      // Always bootstrap the persistent expiry monitor and restore any
-      // persisted bot trade, regardless of whether the bot is running.
-      // This ensures an already-open trade still settles at its original expiry.
-      startBotExpiryMonitor();
-      restorePersistedBotTrade();
-
       if (shouldRun) {
         console.log('[Bot Restore] Bot running state found, attempting restoration...');
         if (currentUser && Object.values(accountBalances).some(v => v > 0) && getBotCurrentPrice()) {
@@ -12837,6 +12956,12 @@
         }
       } else {
         console.log('[Bot Restore] No running state found.');
+        // BOT TRADE LIFECYCLE FIX START
+        // Even if the bot is not running, restore any persisted active bot trade
+        // and ensure the expiry monitor is alive to settle it.
+        restorePersistedActiveBotTrade();
+        ensureBotExpiryMonitorRunning();
+        // BOT TRADE LIFECYCLE FIX END
       }
     }, 1000);
 
@@ -12849,6 +12974,10 @@
     // ============================================================
     // REFERRAL COUNT FIX START - Core functions
     // ============================================================
+    /**
+     * Loads the referral count for the currently authenticated user.
+     * Counts users where referredBy === currentUser's referralCode.
+     */
     async function loadReferralCount() {
       if (!currentUser) {
         console.warn('[Referral Count] No authenticated user.');
@@ -12856,6 +12985,7 @@
       }
 
       try {
+        // Get current user's referral code
         const userSnapshot = await get(child(ref(db), `users/${currentUser.uid}`));
         if (!userSnapshot.exists()) {
           console.warn('[Referral Count] User data not found for:', currentUser.uid);
@@ -12867,25 +12997,31 @@
 
         if (!referralCode) {
           console.warn('[Referral Count] No referralCode found for user:', currentUser.uid);
+          // Display 0 and keep existing listener
           const countEl = document.getElementById('totalReferralsCount');
           if (countEl) countEl.textContent = '0';
           return;
         }
 
+        // Query all users and count those with matching referredBy
         const allUsersSnapshot = await get(child(ref(db), 'users'));
         let count = 0;
 
         if (allUsersSnapshot.exists()) {
           const allUsers = allUsersSnapshot.val();
           for (const uid in allUsers) {
+            // Skip the current user
             if (uid === currentUser.uid) continue;
+
             const user = allUsers[uid];
+            // Count only if referredBy matches this user's referralCode
             if (user.referredBy && user.referredBy === referralCode) {
               count++;
             }
           }
         }
 
+        // Update the UI
         const countEl = document.getElementById('totalReferralsCount');
         if (countEl) {
           countEl.textContent = String(count);
@@ -12898,6 +13034,10 @@
       }
     }
 
+    /**
+     * Sets up a real-time listener on the users node to keep referral count updated.
+     * Uses the current user's referralCode from Firebase.
+     */
     function setupReferralListener(currentUserReferralCode) {
       if (!currentUser) {
         console.warn('[Referral Count] Cannot setup listener: no authenticated user.');
@@ -12909,6 +13049,7 @@
         return;
       }
 
+      // Remove any existing listener to avoid duplicates
       if (window._referralListenerRef) {
         off(window._referralListenerRef);
         window._referralListenerRef = null;
@@ -12970,8 +13111,10 @@
     // ============================================================
     // FINAL COMMUNITY AND CHART LINKS FIX START
     // ============================================================
+    // Fix for "Join Our Community" - opens https://t.me/goldlinemarkets
     const joinCommunityBtn = document.getElementById('joinCommunityBtn');
     if (joinCommunityBtn) {
+      // Remove any existing click listeners to avoid duplication
       joinCommunityBtn.removeEventListener('click', joinCommunityBtn._clickHandler);
       joinCommunityBtn._clickHandler = function(e) {
         e.stopPropagation();
@@ -12984,11 +13127,15 @@
     // ============================================================
     // ABOUT US NAVIGATION REMOVAL START
     // ============================================================
+    // About Us - Navigation removed (does nothing)
     const aboutUsBtn = document.getElementById('aboutUsBtn');
     if (aboutUsBtn) {
+      // Remove any existing click listeners
       aboutUsBtn.removeEventListener('click', aboutUsBtn._clickHandler);
+      // Replace with empty handler that does nothing
       aboutUsBtn._clickHandler = function(e) {
         e.stopPropagation();
+        // Intentionally empty - no navigation
         console.log('[About Us] Clicked - no navigation');
       };
       aboutUsBtn.addEventListener('click', aboutUsBtn._clickHandler);
@@ -13001,7 +13148,11 @@
     // ============================================================
     // DYNAMIC LIMITS - Ensure initial load uses Firebase values
     // ============================================================
+    // If we are already logged in, the listeners above will handle it.
+    // But we also need to ensure that the initial UI reflects the Firebase values.
+    // The listeners fire immediately on connection, but we also set a fallback.
     setTimeout(() => {
+      // Ensure minimum values are set from Firebase or fallback to 5
       if (window.minimumDeposit === undefined || window.minimumDeposit === null) {
         window.minimumDeposit = 5;
         console.log('[Dynamic Limits] Fallback deposit min = 5');
@@ -13026,7 +13177,7 @@
         window.currentMaxStake = 1000;
         console.log('[Dynamic Limits] Fallback stake max = 1000');
       }
-      updateDepositMinUI(window.minimumDeposit);
+      // Update UI      updateDepositMinUI(window.minimumDeposit);
       updateWithdrawalMinUI(window.minimumWithdrawal);
       updateWithdrawalMinFooterUI(window.minimumWithdrawal);
       updateUsdtDepositMaxUI(window.maximumDeposit);
@@ -13036,6 +13187,8 @@
 
     // ============================================================
     // SUPPORT CHAT - User ↔ Admin two-way real-time chat
+    // Isolated Firebase path: support/{uid}/messages
+    // Admin legacy mirror:    received/1970783136/{uid}/...
     // ============================================================
     function formatSupportTime(ts) {
       try {
@@ -13053,6 +13206,7 @@
         container.innerHTML = `<div class="support-chat-loading">No messages yet. Start the conversation.</div>`;
         return;
       }
+      // Sort ascending by timestamp
       const sorted = messageList.slice().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       let html = '';
       sorted.forEach(msg => {
@@ -13081,6 +13235,7 @@
 
     function startSupportChatListener(uid) {
       if (!uid) return;
+      // If already listening to the same uid, don't recreate
       if (supportCurrentUid === uid && supportChatListenerRef) return;
       stopSupportChatListener();
       supportCurrentUid = uid;
@@ -13097,6 +13252,7 @@
             list.push({ id: key, ...item });
           }
         });
+        // Render everything each time (simple, reliable, no duplicates since we replace the DOM)
         renderSupportMessages(list);
       }, (error) => {
         console.error('[Support] listener error:', error);
@@ -13112,6 +13268,7 @@
         showToast('Please log in to use support chat');
         return;
       }
+      // Open the Support Chat panel
       if (panels.supportChat) {
         closeAllPanels();
         panels.supportChat.classList.remove('hidden');
@@ -13120,7 +13277,9 @@
         currentPanelStack.push('supportChat');
         savePanelState('supportChat', currentPanelStack.slice());
       }
+      // Start listener
       startSupportChatListener(currentUser.uid);
+      // Focus the input
       const input = document.getElementById('supportChatInput');
       if (input) input.focus();
     }
@@ -13143,6 +13302,8 @@
           senderEmail: (currentUserData && currentUserData.email) || currentUser.email || '',
           timestamp: Date.now()
         });
+        // Also mirror to the legacy admin path so the existing Admin Support panel
+        // (which watches received/{conversationId}/{userId}) continues to work.
         try {
           const legacyRef = ref(db, `${SUPPORT_ADMIN_LEGACY_PARENT}/${SUPPORT_ADMIN_LEGACY_CONVERSATION}/${currentUser.uid}`);
           await update(legacyRef, {
@@ -13164,6 +13325,9 @@
       }
     }
 
+    // Also listen to the legacy reply field so admin replies coming via the
+    // existing Admin Support panel (which writes to received/.../{uid}/reply)
+    // are automatically delivered into the new per-uid message thread.
     let supportLegacyReplyListenerRef = null;
     let supportLegacyReplyListener = null;
     function startSupportLegacyReplyListener(uid) {
@@ -13181,6 +13345,7 @@
         if (!trimmed) return;
         if (trimmed === lastSeenReply) return;
         lastSeenReply = trimmed;
+        // Push into the per-uid message thread so it renders with the correct alignment.
         try {
           const msgRef = ref(db, `support/${uid}/messages`);
           await push(msgRef, {
@@ -13199,12 +13364,14 @@
       });
     }
 
+    // Attach the Support Chat UI event handlers (isolated, minimal)
     (function attachSupportChatUI() {
       const openBtn = document.getElementById('chatWithSupportBtn');
       if (openBtn) {
         openBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           openSupportChat();
+          // Ensure the legacy listener is also active for admin replies
           if (currentUser) startSupportLegacyReplyListener(currentUser.uid);
         });
       }
@@ -13244,6 +13411,8 @@
       }
     })();
 
+    // Start support listeners when the user logs in (hook into existing flow).
+    // We use a small interval-free approach: check when currentUser becomes available.
     let supportLoginHookAttached = false;
     function attachSupportOnLogin() {
       if (supportLoginHookAttached) return;
@@ -13252,6 +13421,7 @@
         startSupportLegacyReplyListener(currentUser.uid);
       }
     }
+    // Poll briefly (max 30s) until auth resolves, then attach. Polling is cheap and only runs during login.
     (function supportLoginPoll() {
       let tries = 0;
       const t = setInterval(() => {
