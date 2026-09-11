@@ -12180,6 +12180,18 @@
     // =============================================
     // EXECUTE BOT TRADE (with Firebase win rate)
     // =============================================
+    // ============================================================
+    // STRICT SURGICAL CHANGE — BOT TRADE OUTCOME DECIDED AT OPEN
+    // ============================================================
+    // The final WIN/LOSS result and final profit/loss are now
+    // determined IMMEDIATELY when the bot trade is opened, using
+    // the existing rules (WIN => profit = stake * 0.70,
+    // LOSS => profit = -stake). The trade object stores `result`
+    // and `profit` right away. The trade may still visually remain
+    // OPEN until its expiry, but its outcome is fixed forever.
+    // Settlement of the account balance + bot statistics happens
+    // exactly ONCE at expiry (see closeBotTrade).
+    // ============================================================
     async function executeBotTrade() {
       if (botOpeningTrade || botClosingTrade) {
         console.log('[BOT] Trade operation in progress, skipping');
@@ -12269,9 +12281,28 @@
           status: 'pending'
         });
 
+        // Deduct the stake now (existing behavior).
         accountBalances[botExecutionAccount] -= amount;
         await saveBalancesToFirebase();
         updateAccountUI(currentAccountType);
+
+        // ============================================================
+        // STRICT SURGICAL CHANGE: Decide the final outcome NOW.
+        // The trade's WIN/LOSS and its final profit/loss are fixed
+        // the moment the trade is opened. They will never be
+        // recalculated later (see closeBotTrade).
+        // ============================================================
+        const probability = winRatePercent / 100;
+        const isWin = Math.random() < probability;
+        let decidedResult = null;
+        let decidedProfit = 0;
+        if (isWin) {
+          decidedResult = 'WIN';
+          decidedProfit = amount * 0.70;
+        } else {
+          decidedResult = 'LOSS';
+          decidedProfit = -amount;
+        }
 
         const durationInSeconds = robotCurrentDuration;
         const expiryTime = Date.now() + (durationInSeconds * 1000);
@@ -12285,8 +12316,8 @@
           entryTime: Date.now(),
           expiryTime: expiryTime,
           status: 'running',
-          result: null,
-          profit: 0,
+          result: decidedResult,          // DECIDED AT OPEN — never changes
+          profit: decidedProfit,          // DECIDED AT OPEN — never changes
           closePrice: null,
           closeTime: null,
           isBot: true,
@@ -12305,35 +12336,8 @@
           signalIndicator.classList.add('spinning');
         }
 
-        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH START =====
-        // Only create this notification if the trade is NOT from the bot.
-        // This is the only change: we check isBot and skip creating the global popup.
-        if (!trade.isBot) {
-          const sideColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
-          const notif = document.createElement('div');
-          notif.className = 'trade-notification';
-          notif.innerHTML = `
-                        <span style="color: ${sideColor}; font-weight: 800;">${side}</span> 
-                        order opened for <strong>$${amount.toFixed(2)}</strong> 
-                        on <strong>${trade.symbol}</strong> @ ${entryPrice.toFixed(5)}
-                    `;
-          notif.style.borderColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
-          document.body.appendChild(notif);
-
-          setTimeout(() => {
-            if (notif.parentNode) {
-              notif.style.opacity = '0';
-              notif.style.transition = 'opacity 0.5s ease';
-              setTimeout(() => {
-                if (notif.parentNode) notif.remove();
-              }, 500);
-            }
-          }, 4000);
-        }
-        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH END =====
-
         console.log(
-          `[BOT] Trade opened: ${side} ${trade.symbol} @ ${entryPrice} | Amount: $${amount} | Duration: ${durationInSeconds}s | Account: ${botExecutionAccount} | WinRate: ${winRatePercent}%`
+          `[BOT] Trade opened: ${side} ${trade.symbol} @ ${entryPrice} | Amount: $${amount} | Duration: ${durationInSeconds}s | Account: ${botExecutionAccount} | WinRate: ${winRatePercent}% | Pre-decided result: ${decidedResult} | Pre-decided profit: $${decidedProfit.toFixed(2)}`
         );
 
       } catch (error) {
@@ -12344,33 +12348,57 @@
     }
 
     // =============================================
-    // CLOSE BOT TRADE (with stopped-bot expiry support)
+    // CLOSE BOT TRADE (finalization only)
     // =============================================
+    // ============================================================
+    // STRICT SURGICAL CHANGE — EXPIRY ONLY FINALIZES THE TRADE
+    // ============================================================
+    // The trade's WIN/LOSS and final profit/loss were ALREADY
+    // decided at open. This function does NOT recalculate the
+    // outcome. It simply:
+    //   1. Reads the pre-decided trade.result / trade.profit
+    //   2. Applies the settlement to the account balance ONCE
+    //   3. Updates bot statistics (only if bot is still running)
+    //   4. Moves the trade from activeTrades -> closedTrades
+    //   5. Persists history to Firebase (newest 15)
+    //   6. Refreshes the UI
+    // Idempotency: botClosingTrade guard + trade.id duplicate check
+    // + status transition from 'running' to 'closed'.
+    // Stopping the bot does NOT cancel an existing trade; it only
+    // prevents new trades from being opened.
+    // ============================================================
     async function closeBotTrade() {
       if (!botActiveTrade || botClosingTrade) return;
+      const trade = botActiveTrade;
+      // Idempotency guard: only finalize a trade that is still running.
+      if (trade.status !== 'running') {
+        console.log('[BOT] Trade already finalized, skipping close.');
+        botActiveTrade = null;
+        return;
+      }
       botClosingTrade = true;
 
       try {
-        const trade = botActiveTrade;
-        const winRatePercent = trade.winRateUsed !== undefined ? trade.winRateUsed : 70;
-        const probability = winRatePercent / 100;
-        const isWin = Math.random() < probability;
+        // Read the pre-decided outcome — DO NOT recalculate.
+        const isWin = trade.result === 'WIN';
+        const profit = typeof trade.profit === 'number' ? trade.profit : 0;
         const stake = trade.amount;
-        let profit = 0;
 
-        // TRADE EXPIRY PERSISTENCE FIX START
-        // Only update the in-memory session statistics if the bot is still
-        // considered "running" for statistics purposes. If the user manually
-        // stopped the bot, the statistics were already reset, and we must not
-        // re-populate them from this late-closing trade.
+        // ------------------------------------------------------------
+        // Settlement: apply the pre-decided outcome to the balance
+        // exactly once. If the bot is still running, also update
+        // the in-memory session statistics. If the bot has been
+        // stopped by the user, the statistics were already reset
+        // and must not be re-populated from this late-closing trade.
+        // ------------------------------------------------------------
         if (botRunning) {
           if (isWin) {
-            profit = stake * 0.70;
+            // Return stake + profit
             accountBalances[botExecutionAccount] += stake + profit;
             botTotalProfit += profit;
             botWinCount++;
           } else {
-            profit = -stake;
+            // Stake already deducted at open; loss is just recorded
             botTotalProfit += profit;
             botLossCount++;
           }
@@ -12378,8 +12406,7 @@
           botCumulativeProfit += profit;
 
           await saveBalancesToFirebase();
-          trade.result = isWin ? 'WIN' : 'LOSS';
-          trade.profit = profit;
+
           trade.status = 'closed';
           trade.closeTime = Date.now();
           trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
@@ -12400,15 +12427,12 @@
           // Bot was stopped while this trade was running.
           // Settle the balance exactly once, but do NOT touch session statistics.
           if (isWin) {
-            profit = stake * 0.70;
             accountBalances[botExecutionAccount] += stake + profit;
-          } else {
-            profit = -stake;
           }
+          // For a LOSS, the stake was already deducted at open — nothing more to do.
 
           await saveBalancesToFirebase();
-          trade.result = isWin ? 'WIN' : 'LOSS';
-          trade.profit = profit;
+
           trade.status = 'closed';
           trade.closeTime = Date.now();
           trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
@@ -12419,15 +12443,13 @@
             `[BOT] Late-closed trade (bot was stopped): ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`
           );
         }
-        // TRADE EXPIRY PERSISTENCE FIX END
 
+        // Move from activeTrades to closedTrades (idempotency check).
         const idx = activeTrades.findIndex(t => t.id === trade.id);
         if (idx !== -1) activeTrades.splice(idx, 1);
-        // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
         if (!closedTrades.some(t => t.id === trade.id)) {
           closedTrades.push({ ...trade });
         }
-        // TRADE EXPIRY PERSISTENCE FIX END
         await saveTradeHistoryToFirebase(closedTrades);
         updateTradeDisplay();
 
@@ -12438,7 +12460,7 @@
         }
 
         console.log(
-          `[BOT] Trade closed: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)} | WinRate: ${winRatePercent}%`
+          `[BOT] Trade finalized: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`
         );
 
         botActiveTrade = null;
@@ -12695,6 +12717,11 @@
     console.log('[Trade Expiry] History limit increased to 15. Firebase is the source of truth.');
     console.log('[Trade Expiry] Duplicate history entries prevented by trade.id check.');
     // TRADE EXPIRY PERSISTENCE FIX END
+    // BOT TRADE LIFECYCLE STRICT SURGICAL CHANGE - Log
+    console.log('[Bot Lifecycle] Bot trade WIN/LOSS and final profit/loss are now determined at OPEN.');
+    console.log('[Bot Lifecycle] Expiry only finalizes/settles the already-decided outcome.');
+    console.log('[Bot Lifecycle] Stopping the bot does not cancel an existing running trade.');
+    console.log('[Bot Lifecycle] Stopping the bot does not prevent an existing trade from expiring.');
 
     // ============================================================
     // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
