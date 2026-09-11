@@ -6213,17 +6213,30 @@
             // ---------- Start the Firebase win‑rate listener ----------
             startWinRateListener();
 
-            // --- FORCE MARKET AS INITIAL VIEW ---
-            localStorage.removeItem('olymmatix_current_panel');
-
-            closeAllPanels();
-            currentPanelStack = [];
-            if (buttons.market) buttons.market.classList.add('active');
-            if (chartOverlay) chartOverlay.classList.remove('active');
-
-            history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-
-            localStorage.removeItem('olymmatix_current_panel');
+            // ============================================================
+            // PANEL PERSISTENCE FIX START
+            // ============================================================
+            // Do NOT force Market here. The saved panel state will be
+            // restored by restorePanelAfterRefresh() which is called later.
+            // We only initialize the panel stack if no saved state exists.
+            // ============================================================
+            const savedPanelState = getSavedPanelState();
+            if (!savedPanelState) {
+              // No saved panel state: default to Market
+              currentPanelStack = [];
+              if (buttons.market) buttons.market.classList.add('active');
+              if (chartOverlay) chartOverlay.classList.remove('active');
+              history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
+              savePanelState(ROOT_PANEL, []);
+              console.log('[Panel Persist] No saved panel state, defaulting to Market');
+            } else {
+              // Saved panel state exists: leave it intact for restoration.
+              // Do NOT overwrite it with Market.
+              console.log('[Panel Persist] Saved panel state found, will restore:', savedPanelState);
+            }
+            // ============================================================
+            // PANEL PERSISTENCE FIX END
+            // ============================================================
 
             // ============================================================
             // SELECTED ACCOUNT PERSISTENCE - RESTORE
@@ -6286,6 +6299,15 @@
                 subscribeToSymbol(savedRobotInstrument);
             }
             // ---- End restore ----
+
+            // ====================================================================
+            // RISK PERSISTENCE FIX START
+            // ====================================================================
+            // Restore saved risk management values for this user
+            restoreRiskManagementValues();
+            // ====================================================================
+            // RISK PERSISTENCE FIX END
+            // ====================================================================
 
             // ====================================================================
             // REFERRAL LINK FIX PATCH START
@@ -6511,17 +6533,29 @@
               console.log('[Bot Stats] Bot is stopped. Skipping statistics restoration (new user branch).');
             }
 
-            // --- FORCE MARKET AS INITIAL VIEW ---
-            localStorage.removeItem('olymmatix_current_panel');
-
-            closeAllPanels();
-            currentPanelStack = [];
-            if (buttons.market) buttons.market.classList.add('active');
-            if (chartOverlay) chartOverlay.classList.remove('active');
-
-            history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-
-            localStorage.removeItem('olymmatix_current_panel');
+            // ============================================================
+            // PANEL PERSISTENCE FIX START
+            // ============================================================
+            // Do NOT force Market here. The saved panel state will be
+            // restored by restorePanelAfterRefresh() which is called later.
+            // We only initialize the panel stack if no saved state exists.
+            // ============================================================
+            const savedPanelStateNew = getSavedPanelState();
+            if (!savedPanelStateNew) {
+              // No saved panel state: default to Market
+              currentPanelStack = [];
+              if (buttons.market) buttons.market.classList.add('active');
+              if (chartOverlay) chartOverlay.classList.remove('active');
+              history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
+              savePanelState(ROOT_PANEL, []);
+              console.log('[Panel Persist] No saved panel state, defaulting to Market (new user)');
+            } else {
+              // Saved panel state exists: leave it intact for restoration.
+              console.log('[Panel Persist] Saved panel state found, will restore (new user):', savedPanelStateNew);
+            }
+            // ============================================================
+            // PANEL PERSISTENCE FIX END
+            // ============================================================
 
             // ============================================================
             // SELECTED ACCOUNT PERSISTENCE - RESTORE
@@ -6541,6 +6575,15 @@
             // 2. Call the authoritative UI sync function.
             updateAccountUI(accountToRestore);
             // --------------------------------------------
+
+            // ====================================================================
+            // RISK PERSISTENCE FIX START
+            // ====================================================================
+            // Restore saved risk management values for this user (new user branch)
+            restoreRiskManagementValues();
+            // ====================================================================
+            // RISK PERSISTENCE FIX END
+            // ====================================================================
 
             isFirstLoad = false;
             hideFullPageLoader();
@@ -6710,17 +6753,29 @@
             console.log('[Bot Stats] Bot is stopped. Skipping statistics restoration (error branch).');
           }
 
-          // --- FORCE MARKET AS INITIAL VIEW ---
-          localStorage.removeItem('olymmatix_current_panel');
-
-          closeAllPanels();
-          currentPanelStack = [];
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-
-          history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-
-          localStorage.removeItem('olymmatix_current_panel');
+          // ============================================================
+          // PANEL PERSISTENCE FIX START
+          // ============================================================
+          // Do NOT force Market here. The saved panel state will be
+          // restored by restorePanelAfterRefresh() which is called later.
+          // We only initialize the panel stack if no saved state exists.
+          // ============================================================
+          const savedPanelStateErr = getSavedPanelState();
+          if (!savedPanelStateErr) {
+            // No saved panel state: default to Market
+            currentPanelStack = [];
+            if (buttons.market) buttons.market.classList.add('active');
+            if (chartOverlay) chartOverlay.classList.remove('active');
+            history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
+            savePanelState(ROOT_PANEL, []);
+            console.log('[Panel Persist] No saved panel state, defaulting to Market (error branch)');
+          } else {
+            // Saved panel state exists: leave it intact for restoration.
+            console.log('[Panel Persist] Saved panel state found, will restore (error branch):', savedPanelStateErr);
+          }
+          // ============================================================
+          // PANEL PERSISTENCE FIX END
+          // ============================================================
 
           // ============================================================
           // SELECTED ACCOUNT PERSISTENCE - RESTORE
@@ -6740,6 +6795,15 @@
           // 2. Call the authoritative UI sync function.
           updateAccountUI(accountToRestore);
           // --------------------------------------------
+
+          // ====================================================================
+          // RISK PERSISTENCE FIX START
+          // ====================================================================
+          // Restore saved risk management values for this user (error branch)
+          restoreRiskManagementValues();
+          // ====================================================================
+          // RISK PERSISTENCE FIX END
+          // ====================================================================
 
           isFirstLoad = false;
           hideFullPageLoader();
@@ -6928,6 +6992,7 @@
         // Also reset any bot running state on logout to prevent residual issues.
         saveBotRunningState(false);
         // NOTE: Do NOT clear bot statistics on logout. They must persist across logout/login.
+        // NOTE: Do NOT clear risk management settings on logout. They must persist across logout/login.
         // Redirect to login.
         window.location.href = 'index.html';
       }
@@ -6967,7 +7032,7 @@
           }
           supportRenderedIds = {};
           supportCurrentUid = null;
-          // Clear user-specific localStorage (trades only, NOT bot stats).
+          // Clear user-specific localStorage (trades only, NOT bot stats, NOT risk settings).
           try {
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
@@ -6982,6 +7047,8 @@
           saveBotRunningState(false);
           // NOTE: Bot statistics are intentionally NOT cleared on logout.
           // They persist in localStorage under olymmatix_bot_stats_${uid}.
+          // NOTE: Risk management settings are intentionally NOT cleared on logout.
+          // They persist in localStorage under olymmatix_risk_management_${uid}.
           await signOut(auth);
           window.location.href = 'index.html';
         } catch (error) {
@@ -8242,6 +8309,81 @@
     riskTakeProfitInput.addEventListener('focus', () => { takeProfitCard.classList.add('editing'); });
     riskTakeProfitInput.addEventListener('blur', () => { takeProfitCard.classList.remove('editing'); });
 
+    // ====================================================================
+    // RISK PERSISTENCE FIX START
+    // ====================================================================
+    // Save risk management values to localStorage when they change
+    // ====================================================================
+    function getRiskManagementKey() {
+      if (!currentUser || !currentUser.uid) {
+        // Fallback to a generic key if user is not available
+        // This should rarely happen since risk inputs are in Robot Settings
+        // which is only accessible after login
+        return 'olymmatix_risk_management_guest';
+      }
+      return `olymmatix_risk_management_${currentUser.uid}`;
+    }
+
+    function saveRiskManagementValues() {
+      const key = getRiskManagementKey();
+      if (!key) return;
+      
+      try {
+        // Extract numeric values from the input fields
+        const stopLossVal = parseFloat(riskStopLossInput.value.replace(/[^0-9.]/g, ''));
+        const takeProfitVal = parseFloat(riskTakeProfitInput.value.replace(/[^0-9.]/g, ''));
+        
+        // Only save if values are valid positive numbers
+        const data = {};
+        if (!isNaN(stopLossVal) && stopLossVal > 0) {
+          data.stopLoss = stopLossVal;
+        }
+        if (!isNaN(takeProfitVal) && takeProfitVal > 0) {
+          data.takeProfit = takeProfitVal;
+        }
+        
+        if (Object.keys(data).length > 0) {
+          localStorage.setItem(key, JSON.stringify(data));
+          console.log('[Risk Persist] Saved values:', data);
+        }
+      } catch (e) {
+        console.warn('[Risk Persist] Could not save values:', e);
+      }
+    }
+
+    function restoreRiskManagementValues() {
+      const key = getRiskManagementKey();
+      if (!key) return;
+      
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) {
+          console.log('[Risk Persist] No saved risk values found, using defaults');
+          return;
+        }
+        
+        const data = JSON.parse(stored);
+        if (!data || typeof data !== 'object') return;
+        
+        // Restore Stop Loss
+        if (typeof data.stopLoss === 'number' && data.stopLoss > 0) {
+          riskStopLossInput.value = `$${data.stopLoss.toFixed(2)}`;
+          console.log('[Risk Persist] Restored Stop Loss:', data.stopLoss);
+        }
+        
+        // Restore Take Profit
+        if (typeof data.takeProfit === 'number' && data.takeProfit > 0) {
+          riskTakeProfitInput.value = `$${data.takeProfit.toFixed(2)}`;
+          console.log('[Risk Persist] Restored Take Profit:', data.takeProfit);
+        }
+      } catch (e) {
+        console.warn('[Risk Persist] Could not restore values:', e);
+      }
+    }
+    // ====================================================================
+    // RISK PERSISTENCE FIX END
+    // ====================================================================
+
     riskStopLossInput.addEventListener('change', function() {
       let val = this.value.replace(/[^0-9.]/g, '');
       if (val === '' || parseFloat(val) <= 0) {
@@ -8249,6 +8391,8 @@
       } else {
         this.value = '$' + parseFloat(val).toFixed(2);
       }
+      // RISK PERSISTENCE FIX: Save the normalized value
+      saveRiskManagementValues();
     });
     riskTakeProfitInput.addEventListener('change', function() {
       let val = this.value.replace(/[^0-9.]/g, '');
@@ -8257,6 +8401,8 @@
       } else {
         this.value = '$' + parseFloat(val).toFixed(2);
       }
+      // RISK PERSISTENCE FIX: Save the normalized value
+      saveRiskManagementValues();
     });
 
     stopLossCard.addEventListener('click', (e) => {
@@ -12473,6 +12619,13 @@
     console.log('[Robot Exec] Execution account inline selector restored. Selecting an account collapses the list and keeps Robot Settings open.');
     // ROBOT SETTINGS EXECUTION ACCOUNT GUARD - Log
     console.log('[Robot Exec] General .acc-select-card handler now ignores cards inside #inlineExecutionAccounts.');
+    // PANEL PERSISTENCE FIX - Log
+    console.log('[Panel Persist] Panel state is now preserved during authentication initialization.');
+    console.log('[Panel Persist] Saved panel is NOT overwritten with Market during startup.');
+    console.log('[Panel Persist] restorePanelAfterRefresh() will restore the exact panel after refresh.');
+    // RISK PERSISTENCE FIX - Log
+    console.log('[Risk Persist] Risk management values (Stop Loss / Take Profit) now persist across refresh.');
+    console.log('[Risk Persist] Values are stored per-user under olymmatix_risk_management_{uid}.');
 
     // ============================================================
     // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
