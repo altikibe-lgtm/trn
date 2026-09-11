@@ -5571,7 +5571,16 @@
     async function saveTradeHistoryToFirebase(trades) {
       if (!currentUser) return;
       try {
-        const recentTrades = trades.slice(-10);
+        // TRADE EXPIRY PERSISTENCE FIX START
+        // Ensure we only keep the most recent 15 completed trades.
+        // Use a stable ordering key that always exists.
+        const sorted = [...trades].sort((a, b) => {
+          const aTime = a.closeTime || a.entryTime || 0;
+          const bTime = b.closeTime || b.entryTime || 0;
+          return bTime - aTime; // newest first
+        });
+        const recentTrades = sorted.slice(0, 15);
+        // TRADE EXPIRY PERSISTENCE FIX END
         await set(ref(db, `users/${currentUser.uid}/tradeHistory`), recentTrades);
         saveTradesToLocalStorage(recentTrades);
       } catch (error) {
@@ -5582,61 +5591,69 @@
     async function loadTradeHistoryFromFirebase() {
       if (!currentUser) return;
 
-      const localTrades = loadTradesFromLocalStorage();
-      // First, always check if there's a user-specific key? But we now store by user UID in Firebase.
-      // We use the UID as part of the key implicitly, so localStorage is safe per user.
-      // However, to be absolutely sure we only load *this user's* trades, we check
-      // the current user's UID against the stored trades? We can add a safeguard:
-      // We check if localStorage has a userId entry, but for simplicity we rely on
-      // the fact that we don't share the key across users, but to be safe we check
-      // if the stored trades are for this user. We'll store userId in the saved object.
-      // (We'll rework the loading logic below)
-
-      // For robust isolation, we now prefix the localStorage key with the user's UID.
-      // This ensures that trades from different users do not conflict.
-      // But we must be careful not to break the existing code. We'll use a new key
-      // that is user-specific.
+      // TRADE EXPIRY PERSISTENCE FIX START
+      // Firebase must be the reliable cross-session source of truth for the
+      // most recent 15 completed trades. localStorage may be used as a cache,
+      // but it must never permanently prevent newer Firebase history from loading.
       const userSpecificTradesKey = `olymmatix_trades_${currentUser.uid}`;
-      const localTradesForUser = localStorage.getItem(userSpecificTradesKey);
-      if (localTradesForUser) {
-        try {
-          const trades = JSON.parse(localTradesForUser);
-          if (Array.isArray(trades) && trades.length > 0) {
-            console.log('[Storage] Loaded user-specific trades from localStorage');
-            closedTrades = trades;
-            updateTradeDisplay();
-            showTradeHistory('all');
-            return;
-          }
-        } catch (e) {}
-      }
 
-      // Otherwise, load from Firebase.
+      // First, try Firebase (authoritative source).
+      let firebaseLoaded = false;
       try {
         const dbRef = ref(db);
         const snapshot = await get(child(dbRef, `users/${currentUser.uid}/tradeHistory`));
         if (snapshot.exists()) {
           const trades = snapshot.val();
           if (Array.isArray(trades) && trades.length > 0) {
-            closedTrades = trades;
-            // Save to user-specific localStorage.
-            localStorage.setItem(userSpecificTradesKey, JSON.stringify(trades));
+            // Keep only the newest 15 (defensive, in case an older schema stored more).
+            const sorted = [...trades].sort((a, b) => {
+              const aTime = a.closeTime || a.entryTime || 0;
+              const bTime = b.closeTime || b.entryTime || 0;
+              return bTime - aTime;
+            });
+            closedTrades = sorted.slice(0, 15);
+            firebaseLoaded = true;
+            // Refresh the local cache with the authoritative Firebase data.
+            try {
+              localStorage.setItem(userSpecificTradesKey, JSON.stringify(closedTrades));
+            } catch (e) {}
             updateTradeDisplay();
             showTradeHistory('all');
+            console.log('[Trade History] Loaded', closedTrades.length, 'trades from Firebase.');
             return;
           }
         }
-        // If no trades exist, ensure closedTrades is empty and UI is clear.
-        closedTrades = [];
-        updateTradeDisplay();
-        showTradeHistory('all');
       } catch (error) {
         console.error('Error loading trade history from Firebase:', error);
-        // In case of error, ensure we clear the trades to prevent leakage.
-        closedTrades = [];
+      }
+
+      // Only if Firebase has no data, fall back to the user-specific localStorage cache.
+      if (!firebaseLoaded) {
+        try {
+          const localTradesForUser = localStorage.getItem(userSpecificTradesKey);
+          if (localTradesForUser) {
+            const trades = JSON.parse(localTradesForUser);
+            if (Array.isArray(trades) && trades.length > 0) {
+              const sorted = [...trades].sort((a, b) => {
+                const aTime = a.closeTime || a.entryTime || 0;
+                const bTime = b.closeTime || b.entryTime || 0;
+                return bTime - aTime;
+              });
+              closedTrades = sorted.slice(0, 15);
+              console.log('[Trade History] Loaded', closedTrades.length, 'trades from localStorage cache (Firebase empty).');
+            } else {
+              closedTrades = [];
+            }
+          } else {
+            closedTrades = [];
+          }
+        } catch (e) {
+          closedTrades = [];
+        }
         updateTradeDisplay();
         showTradeHistory('all');
       }
+      // TRADE EXPIRY PERSISTENCE FIX END
     }
 
     async function loadCopyTradingData() {
@@ -11817,7 +11834,11 @@
           trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
           await saveBalancesToFirebase();
           updateAccountUI(currentAccountType);
-          closedTrades.push({ ...trade });
+          // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
+          if (!closedTrades.some(t => t.id === trade.id)) {
+            closedTrades.push({ ...trade });
+          }
+          // TRADE EXPIRY PERSISTENCE FIX END
           await saveTradeHistoryToFirebase(closedTrades);
           activeTrades.splice(i, 1);
           changed = true;
@@ -11951,14 +11972,17 @@
       clearBotIntervals();
 
       botInterval = setInterval(() => {
-        if (botRunning) {
-          if (botActiveTrade) {
-            const now = Date.now();
-            if (botActiveTrade.expiryTime <= now) {
-              closeBotTrade();
-            }
+        // TRADE EXPIRY PERSISTENCE FIX START
+        // Even if the bot is stopped, an already-open bot trade must still
+        // be allowed to reach its expiry and be settled. We only CHECK for
+        // expiry here; we never open new trades when botRunning is false.
+        if (botActiveTrade) {
+          const now = Date.now();
+          if (botActiveTrade.expiryTime <= now) {
+            closeBotTrade();
           }
         }
+        // TRADE EXPIRY PERSISTENCE FIX END
       }, 1000);
 
       saveBotRunningState(true);
@@ -12136,12 +12160,10 @@
       botStatus.style.color = 'var(--success)';
 
       botInterval = setInterval(() => {
-        if (botRunning) {
-          if (botActiveTrade) {
-            const now = Date.now();
-            if (botActiveTrade.expiryTime <= now) {
-              closeBotTrade();
-            }
+        if (botActiveTrade) {
+          const now = Date.now();
+          if (botActiveTrade.expiryTime <= now) {
+            closeBotTrade();
           }
         }
       }, 1000);
@@ -12322,7 +12344,7 @@
     }
 
     // =============================================
-    // CLOSE BOT TRADE (original logic, with persistence updates)
+    // CLOSE BOT TRADE (with stopped-bot expiry support)
     // =============================================
     async function closeBotTrade() {
       if (!botActiveTrade || botClosingTrade) return;
@@ -12336,60 +12358,87 @@
         const stake = trade.amount;
         let profit = 0;
 
-        // GUARD: If the bot was stopped (e.g., by a manual user stop)
-        // during the async operations above, do not update the session
-        // statistics. The manual stop handler has already reset them.
-        if (!botRunning) {
-          console.log('[BOT] Trade close aborted: bot is no longer running. Session stats not updated.');
-          botActiveTrade = null;
-          botClosingTrade = false;
-          return;
-        }
+        // TRADE EXPIRY PERSISTENCE FIX START
+        // Only update the in-memory session statistics if the bot is still
+        // considered "running" for statistics purposes. If the user manually
+        // stopped the bot, the statistics were already reset, and we must not
+        // re-populate them from this late-closing trade.
+        if (botRunning) {
+          if (isWin) {
+            profit = stake * 0.70;
+            accountBalances[botExecutionAccount] += stake + profit;
+            botTotalProfit += profit;
+            botWinCount++;
+          } else {
+            profit = -stake;
+            botTotalProfit += profit;
+            botLossCount++;
+          }
 
-        if (isWin) {
-          profit = stake * 0.70;
-          accountBalances[botExecutionAccount] += stake + profit;
-          botTotalProfit += profit;
-          botWinCount++;
+          botCumulativeProfit += profit;
+
+          await saveBalancesToFirebase();
+          trade.result = isWin ? 'WIN' : 'LOSS';
+          trade.profit = profit;
+          trade.status = 'closed';
+          trade.closeTime = Date.now();
+          trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
+          botTradeCount++;
+
+          botTradeCountEl.textContent = botTradeCount;
+          botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
+          botLossCountEl.textContent = botLossCount;
+
+          if (botCumulativeProfitDisplay) {
+            const color = botCumulativeProfit >= 0 ? 'var(--success)' : 'var(--btn-danger)';
+            botCumulativeProfitDisplay.style.color = color;
+            botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
+          }
+
+          updateAccountUI(currentAccountType);
         } else {
-          profit = -stake;
-          botTotalProfit += profit;
-          botLossCount++;
+          // Bot was stopped while this trade was running.
+          // Settle the balance exactly once, but do NOT touch session statistics.
+          if (isWin) {
+            profit = stake * 0.70;
+            accountBalances[botExecutionAccount] += stake + profit;
+          } else {
+            profit = -stake;
+          }
+
+          await saveBalancesToFirebase();
+          trade.result = isWin ? 'WIN' : 'LOSS';
+          trade.profit = profit;
+          trade.status = 'closed';
+          trade.closeTime = Date.now();
+          trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
+
+          updateAccountUI(currentAccountType);
+
+          console.log(
+            `[BOT] Late-closed trade (bot was stopped): ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`
+          );
         }
-
-        botCumulativeProfit += profit;
-
-        await saveBalancesToFirebase();
-        trade.result = isWin ? 'WIN' : 'LOSS';
-        trade.profit = profit;
-        trade.status = 'closed';
-        trade.closeTime = Date.now();
-        trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
-        botTradeCount++;
-
-        botTradeCountEl.textContent = botTradeCount;
-        botProfitDisplay.textContent = `$${botTotalProfit.toFixed(2)}`;
-        botLossCountEl.textContent = botLossCount;
-
-        if (botCumulativeProfitDisplay) {
-          const color = botCumulativeProfit >= 0 ? 'var(--success)' : 'var(--btn-danger)';
-          botCumulativeProfitDisplay.style.color = color;
-          botCumulativeProfitDisplay.textContent = `$${botCumulativeProfit.toFixed(2)}`;
-        }
-
-        updateAccountUI(currentAccountType);
+        // TRADE EXPIRY PERSISTENCE FIX END
 
         const idx = activeTrades.findIndex(t => t.id === trade.id);
         if (idx !== -1) activeTrades.splice(idx, 1);
-        closedTrades.push({ ...trade });
+        // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
+        if (!closedTrades.some(t => t.id === trade.id)) {
+          closedTrades.push({ ...trade });
+        }
+        // TRADE EXPIRY PERSISTENCE FIX END
         await saveTradeHistoryToFirebase(closedTrades);
         updateTradeDisplay();
 
-        // Save bot statistics to localStorage after counters are updated
-        saveBotStatsToLocalStorage();
+        // Save bot statistics to localStorage after counters are updated,
+        // but only if the bot is still running.
+        if (botRunning) {
+          saveBotStatsToLocalStorage();
+        }
 
         console.log(
-          `[BOT] Trade closed: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)} | Cumulative: $${botCumulativeProfit.toFixed(2)} | WinRate: ${winRatePercent}%`
+          `[BOT] Trade closed: ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)} | WinRate: ${winRatePercent}%`
         );
 
         botActiveTrade = null;
@@ -12409,12 +12458,15 @@
           return;
         }
 
+        // Only open a new trade if the bot is still running.
         if (botRunning) {
           setTimeout(() => {
             if (botRunning && !botActiveTrade) {
               executeBotTrade();
             }
           }, 1000);
+        } else {
+          console.log('[BOT] Bot is stopped. No new trade will be opened.');
         }
       } catch (error) {
         console.error('[BOT] Error closing trade:', error);
@@ -12423,7 +12475,8 @@
       }
     }
 
-    // =============================================    // RESTORE PANEL AFTER REFRESH (unchanged)
+    // =============================================
+    // RESTORE PANEL AFTER REFRESH (unchanged)
     // =============================================
     function restorePanelAfterRefresh() {
       const saved = getSavedPanelState();
@@ -12636,6 +12689,12 @@
     // RISK PERSISTENCE FIX - Log
     console.log('[Risk Persist] Risk management values (Stop Loss / Take Profit) now persist across refresh.');
     console.log('[Risk Persist] Values are stored per-user under olymmatix_risk_management_{uid}.');
+    // TRADE EXPIRY PERSISTENCE FIX START - Log
+    console.log('[Trade Expiry] Expired bot trades now close even if the bot was stopped.');
+    console.log('[Trade Expiry] Late-closed trades settle balances exactly once.');
+    console.log('[Trade Expiry] History limit increased to 15. Firebase is the source of truth.');
+    console.log('[Trade Expiry] Duplicate history entries prevented by trade.id check.');
+    // TRADE EXPIRY PERSISTENCE FIX END
 
     // ============================================================
     // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
