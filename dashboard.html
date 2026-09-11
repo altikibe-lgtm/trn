@@ -7045,6 +7045,16 @@
             localStorage.removeItem(TRADES_STORAGE_KEY);
           } catch (e) {}
           saveBotRunningState(false);
+          // ============================================================
+          // PANEL PERSISTENCE RESET ON LOGOUT
+          // Clear only the current-panel state so the next login
+          // starts at Market. All other data is preserved.
+          // ============================================================
+          try {
+            localStorage.removeItem(PANEL_STATE_KEY);
+            console.log('[Panel Persist] Cleared panel state on explicit logout.');
+          } catch (e) {}
+          // ============================================================
           // NOTE: Bot statistics are intentionally NOT cleared on logout.
           // They persist in localStorage under olymmatix_bot_stats_${uid}.
           // NOTE: Risk management settings are intentionally NOT cleared on logout.
