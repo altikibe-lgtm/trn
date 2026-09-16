@@ -2235,7 +2235,7 @@
       font-style: italic;
     }
 
-    /* ============================================== 
+    /* ==============================================
        MOBILE RESPONSIVE
        ============================================== */
     @media (max-width: 850px) {
@@ -4233,6 +4233,15 @@
     let selectedTransactionTab = 'all';
 
     // ====================================================================
+    // FIREBASE BALANCE AUTHORITY FLAG
+    // This flag is set to true only after Firebase has returned the
+    // initial balance snapshot for the current user. It is used to
+    // prevent the loader from hiding prematurely and to prevent any
+    // local/cached balance from being displayed as the live balance.
+    // ====================================================================
+    let balancesLoadedFromFirebase = false;
+
+    // ====================================================================
     // FIREBASE WIN-RATE STORAGE:  users/{uid}/winRate
     //    Existing admin-writable fields:
     //       demo: number
@@ -5435,6 +5444,10 @@
             'real-usd': data['real-usd'] ?? 0.00,
             'real-usdt': data['real-usdt'] ?? 0.00
           };
+          // FIREBASE AUTHORITATIVE FLAG: Set to true once Firebase returns the
+          // initial snapshot. This prevents the loader from hiding before
+          // Firebase balances are available.
+          balancesLoadedFromFirebase = true;
           updateAccountUI(currentAccountType);
           updateExecutionAccountDisplay();
           document.querySelectorAll('.acc-select-card').forEach(card => {
@@ -5456,25 +5469,35 @@
           // Update execution account display
           updateExecutionAccountDisplay();
           console.log('[Real-time] Balances updated:', accountBalances);
+        } else {
+          // Firebase returned an empty snapshot for this user's balances.
+          // This is a valid state for a brand-new user who has never had
+          // balances initialized. Initialize them in Firebase and set the flag.
+          accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
+          balancesLoadedFromFirebase = true;
+          saveBalancesToFirebase();
+          updateAccountUI(currentAccountType);
+          console.log('[Real-time] No balances found in Firebase, initialized defaults.');
         }
       }, (error) => {
         console.error('Error listening to balances:', error);
+        // Even on error, we must not leave the loader spinning forever.
+        // Fall back to safe defaults and set the flag so the loader can hide.
+        balancesLoadedFromFirebase = true;
+        accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
+        updateAccountUI(currentAccountType);
       });
     }
 
+    // =============================================
+    // LOAD BALANCES FROM FIREBASE (AUTHORITATIVE)
+    // =============================================
+    // This function now reads ONLY from Firebase. It does NOT read from
+    // localStorage. The real-time listener is the sole source of truth.
+    // We keep this function because it is awaited during auth initialization
+    // to ensure the auth flow waits for the initial Firebase balance snapshot.
     async function loadBalancesFromFirebase() {
       if (!currentUser) return null;
-
-      const localData = loadFromLocalStorage();
-      if (localData && localData.balances && localData.userId === currentUser.uid) {
-        console.log('[Storage] Using localStorage data');
-        accountBalances = {
-          'demo': localData.balances.demo ?? DEMO_BALANCE,
-          'real-usd': localData.balances['real-usd'] ?? 0.00,
-          'real-usdt': localData.balances['real-usdt'] ?? 0.00
-        };
-        return accountBalances;
-      }
 
       try {
         const dbRef = ref(db);
@@ -5488,12 +5511,10 @@
               'real-usd': data.balances['real-usd'] ?? 0.00,
               'real-usdt': data.balances['real-usdt'] ?? 0.00
             };
-            saveToLocalStorage({
-              balances: accountBalances,
-              userId: currentUser.uid,
-              timestamp: Date.now()
-            });
           } else {
+            // No balances node exists in Firebase for this user.
+            // This is a valid state for a brand-new user.
+            // Initialize the balances in Firebase and use those defaults.
             accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
             await saveBalancesToFirebase();
           }
@@ -5513,21 +5534,18 @@
           }
           console.log('[Activation] Loaded isAccountActivated:', isAccountActivated);
           // WITHDRAWAL ACTIVATION FINAL FIX END
+          // The authoritative balances have been loaded from Firebase.
+          balancesLoadedFromFirebase = true;
           return accountBalances;
         }
         return null;
       } catch (error) {
         console.error('Error loading balances:', error);
-        const localData = loadFromLocalStorage();
-        if (localData && localData.balances) {
-          accountBalances = {
-            'demo': localData.balances.demo ?? DEMO_BALANCE,
-            'real-usd': localData.balances['real-usd'] ?? 0.00,
-            'real-usdt': localData.balances['real-usdt'] ?? 0.00
-          };
-          return accountBalances;
-        }
-        return null;
+        // On error, we still need to allow the app to proceed.
+        // Set the flag and use safe defaults.
+        balancesLoadedFromFirebase = true;
+        accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
+        return accountBalances;
       }
     }
 
@@ -6166,6 +6184,11 @@
         closedTrades = [];
         updateTradeDisplay();
         showTradeHistory('all');
+
+        // Reset the Firebase balance authority flag for the new user.
+        // This ensures we wait for Firebase to return the balance snapshot
+        // for THIS user before hiding the loader.
+        balancesLoadedFromFirebase = false;
 
         // Clean up previous transaction listener if any
         if (transactionListenerRef) {
@@ -7004,6 +7027,8 @@
         // User is logged out. Clear all user-specific trade state.
         activeTrades = [];
         closedTrades = [];
+        // Reset the Firebase balance authority flag for the logged-out state.
+        balancesLoadedFromFirebase = false;
         // Clear UI
         updateTradeDisplay();
         showTradeHistory('all');
@@ -9345,15 +9370,102 @@
       });
     }
 
+    // ====================================================================
+    // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION - SURGICAL PATCH
+    // ====================================================================
+    // ONE USER ACTION = ONE CRYPTO DEPOSIT TRANSACTION RECORD
+    //
+    // This patch adds a submission-in-progress lock at the JavaScript
+    // handler level, plus a pending crypto deposit check before the
+    // Firebase write. It ensures that even if the submit handler is
+    // invoked multiple times rapidly (e.g., double-click, duplicate
+    // event registration, or any other cause), only ONE pending
+    // crypto deposit record is created.
+    //
+    // The lock is released on both success and failure. It is scoped
+    // to the current user and the current submission only.
+    // ====================================================================
+    let cryptoDepositSubmissionInProgress = false;
+
+    // Helper: Check if the current user already has a pending crypto deposit.
+    // This uses the in-memory `transactions` array which is kept in sync
+    // by the real-time Firebase transaction listener.
+    // Returns true if a pending crypto deposit exists.
+    function hasPendingCryptoDeposit() {
+      if (!Array.isArray(transactions) || transactions.length === 0) return false;
+      const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
+      return transactions.some(tx => {
+        // Must be a deposit
+        if (tx.type !== 'deposit') return false;
+        // Must be a crypto payment method
+        if (!tx.paymentMethod || !cryptoMethods.includes(tx.paymentMethod)) return false;
+        // Normalize status safely and case-insensitively
+        const status = String(tx.status || '').toLowerCase().trim();
+        // Pending statuses include: pending, pending_approval, pending approval
+        const isPending = status === 'pending' ||
+                          status === 'pending_approval' ||
+                          status === 'pending approval';
+        return isPending;
+      });
+    }
+    // ====================================================================
+    // END CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION PATCH
+    // ====================================================================
+
     const submitUsdtBtn = document.getElementById('submitUsdtDeposit');
     if (submitUsdtBtn) {
       submitUsdtBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
+
+        // ================================================================
+        // SURGICAL PATCH: SUBMISSION-IN-PROGRESS LOCK
+        // ================================================================
+        // If a crypto deposit submission is already in progress, stop
+        // immediately. This is the primary protection against duplicate
+        // Firebase writes from rapid double-clicks or any other cause.
+        // The lock is at the JavaScript handler level, not just the button.
+        // ================================================================
+        if (cryptoDepositSubmissionInProgress) {
+          console.log('[Crypto Deposit] Submission already in progress, ignoring duplicate invocation.');
+          return;
+        }
+
+        // ================================================================
+        // SURGICAL PATCH: CHECK FOR EXISTING PENDING CRYPTO DEPOSIT
+        // ================================================================
+        // Before doing anything else, check if the user already has a
+        // pending crypto deposit. If so, block the new submission.
+        // This preserves the existing one-pending-crypto-deposit rule.
+        // ================================================================
+        if (hasPendingCryptoDeposit()) {
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--warning)';
+          notif.innerHTML = `
+            <div style="font-weight: 600;">Pending Deposit Exists</div>
+            <div style="font-size:13px; color:var(--text-secondary);">You already have a pending crypto deposit. Please wait for it to be approved.</div>
+          `;
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 4000);
+          return;
+        }
+
+        // Read the form values
         const amount = parseFloat(document.getElementById('usdtAmountInput').value);
         const hash = document.getElementById('usdtHashInput').value;
         const note = document.getElementById('usdtNoteInput').value;
         const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
         const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
+
+        // Validate amount
         if (!amount || amount < minDeposit) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
@@ -9394,42 +9506,84 @@
           }, 3000);
           return;
         }
-        await saveTransactionToFirebase({
-          type: 'deposit',
-          amount: amount,
-          currency: 'USDT',
-          accountType: 'real-usdt',
-          paymentMethod: selectedPaymentMethodForDeposit,
-          transactionHash: hash || 'Not provided',
-          note: note || 'None',
-          walletAddress: document.getElementById('usdtWalletAddress').textContent,
-          status: 'pending_approval'
-        });
-        const notif = document.createElement('div');
-        notif.className = 'trade-notification';
-        notif.style.borderColor = 'var(--success)';
-        notif.innerHTML = `
+
+        // ================================================================
+        // SURGICAL PATCH: ACQUIRE THE SUBMISSION LOCK
+        // ================================================================
+        // All validation has passed. We are now going to create exactly
+        // one Firebase transaction record. Acquire the lock so that any
+        // additional invocation of this handler is immediately rejected
+        // until the operation completes or fails.
+        // ================================================================
+        cryptoDepositSubmissionInProgress = true;
+
+        try {
+          // Create exactly ONE transaction record.
+          await saveTransactionToFirebase({
+            type: 'deposit',
+            amount: amount,
+            currency: 'USDT',
+            accountType: 'real-usdt',
+            paymentMethod: selectedPaymentMethodForDeposit,
+            transactionHash: hash || 'Not provided',
+            note: note || 'None',
+            walletAddress: document.getElementById('usdtWalletAddress').textContent,
+            status: 'pending_approval'
+          });
+
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--success)';
+          notif.innerHTML = `
                     <div style="font-weight: 600;">USDT Deposit Submitted</div>
                     <div style="font-size:13px; color:var(--text-secondary);">${amount} USDT pending approval</div>
                 `;
-        document.body.appendChild(notif);
-        setTimeout(() => {
-          if (notif.parentNode) {
-            notif.style.opacity = '0';
-            notif.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => {
-              if (notif.parentNode) notif.remove();
-            }, 500);
-          }
-        }, 4000);
-        setTimeout(() => {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
-        }, 1000);
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 4000);
+          setTimeout(() => {
+            closeAllPanels();
+            currentPanelStack = [];
+            history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
+            if (buttons.market) buttons.market.classList.add('active');
+            if (chartOverlay) chartOverlay.classList.remove('active');
+            savePanelState(ROOT_PANEL, []);
+          }, 1000);
+        } catch (error) {
+          console.error('[Crypto Deposit] Submission failed:', error);
+          const notif = document.createElement('div');
+          notif.className = 'trade-notification';
+          notif.style.borderColor = 'var(--btn-danger)';
+          notif.innerHTML = `
+                    <div style="font-weight: 600;">Submission Failed</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Could not submit deposit. Please try again.</div>
+                `;
+          document.body.appendChild(notif);
+          setTimeout(() => {
+            if (notif.parentNode) {
+              notif.style.opacity = '0';
+              notif.style.transition = 'opacity 0.5s ease';
+              setTimeout(() => {
+                if (notif.parentNode) notif.remove();
+              }, 500);
+            }
+          }, 4000);
+        } finally {
+          // ================================================================
+          // SURGICAL PATCH: RELEASE THE SUBMISSION LOCK
+          // ================================================================
+          // Release the lock on BOTH success and failure so that future
+          // deposits are not permanently disabled.
+          // ================================================================
+          cryptoDepositSubmissionInProgress = false;
+        }
       });
     }
 
@@ -12925,15 +13079,52 @@
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
     }
 
-    if (currentUser) {
-      setTimeout(() => {
-        const loader = document.getElementById('fullPageLoader');
-        if (loader && !loader.classList.contains('hidden') && currentUser) {
-          console.log('[Loader] Force-hiding loader as fallback.');
+    // ============================================================
+    // FIREBASE BALANCE AUTHORITY - LOADER CONTROL
+    // ============================================================
+    // The loader is shown by default via CSS. It must only be hidden
+    // after Firebase has returned the initial balance snapshot for the
+    // authenticated user. This prevents any stale/local balance from
+    // flashing on screen before Firebase loads.
+    //
+    // A polling interval checks whether balancesLoadedFromFirebase is
+    // true. Once it is, the loader is hidden. This is NOT a forced
+    // timeout: the loader hides because the required Firebase balance
+    // initialization has completed, not because of an arbitrary delay.
+    //
+    // Safety: if Firebase never returns a balance (e.g., network error),
+    // the error handler in startBalanceListener() sets the flag to true
+    // and uses safe defaults, allowing the loader to hide.
+    // ============================================================
+    (function waitForFirebaseBalances() {
+      let checks = 0;
+      const maxChecks = 300; // 30 seconds at 100ms intervals (safety fallback)
+      const interval = setInterval(() => {
+        checks++;
+        // Only hide the loader if we have a current user AND Firebase
+        // has returned the balance snapshot for that user.
+        if (currentUser && balancesLoadedFromFirebase) {
+          clearInterval(interval);
           hideFullPageLoader();
+          console.log('[Loader] Hidden: Firebase balances loaded for user', currentUser.uid);
+          return;
         }
-      }, 5000);
-    }
+        // Safety fallback: if Firebase never responds (e.g., network issue),
+        // do not leave the user staring at a spinner forever. After 30s,
+        // hide the loader and let the app proceed with safe defaults.
+        // The error handler in startBalanceListener() should already have
+        // set the flag in most failure cases, but this is a final guard.
+        if (checks >= maxChecks) {
+          clearInterval(interval);
+          if (!balancesLoadedFromFirebase) {
+            console.warn('[Loader] Safety timeout: hiding loader without Firebase balance confirmation.');
+            balancesLoadedFromFirebase = true;
+          }
+          hideFullPageLoader();
+          console.log('[Loader] Hidden: safety fallback after timeout.');
+        }
+      }, 100);
+    })();
 
     setTimeout(() => {
       restorePanelAfterRefresh();
@@ -13437,6 +13628,11 @@
 
     console.log('[Support] Two-way support chat initialized. Path: support/{uid}/messages');
     console.log('[Support] Legacy mirror active at received/1970783136/{uid} for Admin Support compatibility.');
+    // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION START - Log the fix
+    console.log('[Crypto Deposit] Duplicate submission protection enabled.');
+    console.log('[Crypto Deposit] ONE USER ACTION = ONE CRYPTO DEPOSIT TRANSACTION RECORD.');
+    console.log('[Crypto Deposit] Submission-in-progress lock + pending deposit check active.');
+    // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION END
 
   </script>
 </body>
