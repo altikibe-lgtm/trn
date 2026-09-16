@@ -4220,8 +4220,8 @@
 
     let currentUser = null;
     let currentUserData = {};
-    let currentAccountType = 'demo';
-    let botExecutionAccount = 'demo';
+    let currentAccountType = null;   // PATCH: null until resolved from saved account
+    let botExecutionAccount = null;  // PATCH: null until resolved from saved account
     let accountBalances = { 'demo': 0, 'real-usd': 0, 'real-usdt': 0 };
     let activeTrades = [];
     let closedTrades = [];
@@ -5715,8 +5715,18 @@
     // AUTHORITATIVE ACCOUNT UI SYNCHRONIZATION
     // FIX: The selected account name, icon, and balance now always match
     //      the currently selected account type.
+    // PATCH: Guard against null account type so no Demo UI is shown
+    //      before the saved account has been resolved.
     // ====================================================================
     function updateAccountUI(accountType) {
+      // PATCH: If accountType is null/undefined, do not render anything.
+      // This prevents the startup UI from exposing a Demo/default account
+      // before the saved account has been resolved from localStorage.
+      if (!accountType) {
+        console.log('[Account UI] Skipping render: accountType is null (startup not yet resolved).');
+        return;
+      }
+
       // 1. Ensure the current account type is set.
       currentAccountType = accountType;
 
@@ -5779,6 +5789,13 @@
     // ====================================================================
 
     function updateExecutionAccountDisplay() {
+      // PATCH: Do not render execution account UI until the account
+      // has been resolved during startup.
+      if (!botExecutionAccount) {
+        console.log('[Exec Account UI] Skipping render: botExecutionAccount is null (startup not yet resolved).');
+        return;
+      }
+
       const accountInfo = accountDisplayMap[botExecutionAccount] || accountDisplayMap['demo'];
       const balance = accountBalances[botExecutionAccount] || 0;
       const currency = botExecutionAccount === 'real-usdt' ? 'USDT' : '$';
@@ -5805,6 +5822,9 @@
 
     // Helper to update inline execution account list (balances & active state).
     function updateInlineAccountBalances() {
+      // PATCH: Do not render until botExecutionAccount is resolved.
+      if (!botExecutionAccount) return;
+
       const inlineCards = document.querySelectorAll('#inlineExecutionAccounts .acc-select-card');
       inlineCards.forEach(card => {
         const accType = card.getAttribute('data-account');
@@ -6190,6 +6210,11 @@
         // for THIS user before hiding the loader.
         balancesLoadedFromFirebase = false;
 
+        // PATCH: Reset account state to null for the new user so that
+        // no stale Demo UI can be rendered before the saved account is resolved.
+        currentAccountType = null;
+        botExecutionAccount = null;
+
         // Clean up previous transaction listener if any
         if (transactionListenerRef) {
           off(transactionListenerRef);
@@ -6280,17 +6305,20 @@
 
             // ============================================================
             // SELECTED ACCOUNT PERSISTENCE - RESTORE
+            // PATCH: Resolve saved account BEFORE any UI render.
             // ============================================================
             const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
             const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = 'demo';
+            let accountToRestore = null; // PATCH: null means "not yet resolved"
             if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
               accountToRestore = savedAccount;
               console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
             } else {
+              // PATCH: Only fall back to Demo when there is NO valid saved account.
+              accountToRestore = 'demo';
               console.log('[Account Persist] No valid saved account found, using demo fallback.');
             }
-            // 1. Set the internal state.
+            // 1. Set the internal state FIRST (before any UI render).
             currentAccountType = accountToRestore;
             botExecutionAccount = accountToRestore;
             // 2. Call the authoritative UI sync function.
@@ -6611,17 +6639,20 @@
 
             // ============================================================
             // SELECTED ACCOUNT PERSISTENCE - RESTORE
+            // PATCH: Resolve saved account BEFORE any UI render.
             // ============================================================
             const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
             const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = 'demo';
+            let accountToRestore = null; // PATCH: null means "not yet resolved"
             if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
               accountToRestore = savedAccount;
               console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
             } else {
+              // PATCH: Only fall back to Demo when there is NO valid saved account.
+              accountToRestore = 'demo';
               console.log('[Account Persist] No valid saved account found, using demo fallback.');
             }
-            // 1. Set the internal state.
+            // 1. Set the internal state FIRST (before any UI render).
             currentAccountType = accountToRestore;
             botExecutionAccount = accountToRestore;
             // 2. Call the authoritative UI sync function.
@@ -6843,17 +6874,20 @@
 
           // ============================================================
           // SELECTED ACCOUNT PERSISTENCE - RESTORE
+          // PATCH: Resolve saved account BEFORE any UI render.
           // ============================================================
           const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
           const savedAccount = localStorage.getItem(savedAccountKey);
-          let accountToRestore = 'demo';
+          let accountToRestore = null; // PATCH: null means "not yet resolved"
           if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
             accountToRestore = savedAccount;
             console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
           } else {
+            // PATCH: Only fall back to Demo when there is NO valid saved account.
+            accountToRestore = 'demo';
             console.log('[Account Persist] No valid saved account found, using demo fallback.');
           }
-          // 1. Set the internal state.
+          // 1. Set the internal state FIRST (before any UI render).
           currentAccountType = accountToRestore;
           botExecutionAccount = accountToRestore;
           // 2. Call the authoritative UI sync function.
@@ -7029,6 +7063,10 @@
         closedTrades = [];
         // Reset the Firebase balance authority flag for the logged-out state.
         balancesLoadedFromFirebase = false;
+        // PATCH: Reset account state to null on logout so no stale account
+        // state leaks into the next login.
+        currentAccountType = null;
+        botExecutionAccount = null;
         // Clear UI
         updateTradeDisplay();
         showTradeHistory('all');
