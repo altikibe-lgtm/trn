@@ -4233,20 +4233,26 @@
     let selectedTransactionTab = 'all';
 
     // ====================================================================
+    // STARTUP SYNCHRONIZATION FLAG
+    // This flag is set to true ONLY after ALL startup restoration work
+    // (Firebase data, balances, account resolution, panel state,
+    //  robot instrument, chart, bot state, transactions, risk settings,
+    //  etc.) has completed for the currently authenticated user.
+    //
+    // The existing full-page loader must remain visible while this flag
+    // is false. It is the single authority for hiding the loader.
+    // ====================================================================
+    let startupReady = false;
+
+    // ====================================================================
     // FIREBASE BALANCE AUTHORITY FLAG
     // This flag is set to true only after Firebase has returned the
-    // initial balance snapshot for the current user. It is used to
-    // prevent the loader from hiding prematurely and to prevent any
-    // local/cached balance from being displayed as the live balance.
+    // initial balance snapshot for the current user.
     // ====================================================================
     let balancesLoadedFromFirebase = false;
 
     // ====================================================================
     // FIREBASE WIN-RATE STORAGE:  users/{uid}/winRate
-    //    Existing admin-writable fields:
-    //       demo: number
-    //       realBot: number
-    //       realManual: number
     // ====================================================================
     let firebaseWinRates = {
       demo: null,
@@ -4272,14 +4278,11 @@
 
     // =============================================
     // SUPPORT CHAT (NEW - MINIMAL ADDITION)
-    // Isolated state and helpers for the user-side
-    // two-way chat with the Admin Support panel.
     // =============================================
     let supportChatListenerRef = null;
     let supportChatListener = null;
-    let supportRenderedIds = {}; // Map of firebase message id -> true, prevents duplicates
+    let supportRenderedIds = {};
     let supportCurrentUid = null;
-    // Mirror path kept for Admin Support compatibility.
     const SUPPORT_ADMIN_LEGACY_PARENT = 'received';
     const SUPPORT_ADMIN_LEGACY_CONVERSATION = '1970783136';
 
@@ -4330,8 +4333,6 @@
     // ============================================================
     // BOT STATISTICS PERSISTENCE - NEW FUNCTIONS
     // ============================================================
-    // These functions persist bot statistics across refresh, logout, and login.
-    // Statistics are ONLY cleared when the user explicitly presses "Stop trading".
 
     function getBotStatsKey() {
       if (!currentUser) return null;
@@ -4344,9 +4345,6 @@
         console.warn('[Bot Stats] Cannot save: no current user');
         return;
       }
-      // Only save statistics while the bot is running.
-      // This prevents an in-progress trade close from re-saving
-      // statistics after the user has manually stopped the bot.
       if (!botRunning) {
         console.log('[Bot Stats] Skipping save: bot is not running');
         return;
@@ -4399,7 +4397,6 @@
     }
 
     function restoreBotStatsUI() {
-      // Update all bot statistics UI elements with current in-memory values
       if (botTradeCountEl) botTradeCountEl.textContent = String(Number(botTradeCount) || 0);
       if (botLossCountEl) botLossCountEl.textContent = String(Number(botLossCount) || 0);
       if (botProfitDisplay) botProfitDisplay.textContent = `$${(Number(botTotalProfit) || 0).toFixed(2)}`;
@@ -4690,71 +4687,29 @@
     }
 
     // WITHDRAWAL TRANSACTION SYNC FIX START
-    // =============================================
-    // WITHDRAWAL STATUS SYNCHRONIZATION
-    // This function reconciles withdrawal status with transaction status
-    // =============================================
     let withdrawalListenerInitialized = false;
     let withdrawalListenerRef = null;
     let withdrawalDataCache = {};
 
-    /**
-     * Map withdrawal status to transaction status
-     * @param {string} withdrawalStatus - The status from the withdrawal record
-     * @returns {string} - The mapped transaction status
-     */
     function mapWithdrawalStatusToTransactionStatus(withdrawalStatus) {
       if (!withdrawalStatus) return 'pending';
-      
       const status = withdrawalStatus.toLowerCase().trim();
-      
-      // Completed/approved statuses
       const completedStatuses = ['completed', 'complete', 'approved', 'success', 'successful'];
-      if (completedStatuses.includes(status)) {
-        return 'completed';
-      }
-      
-      // Failed/rejected statuses
+      if (completedStatuses.includes(status)) return 'completed';
       const failedStatuses = ['failed', 'rejected', 'declined'];
-      if (failedStatuses.includes(status)) {
-        return 'failed';
-      }
-      
-      // Cancelled statuses
+      if (failedStatuses.includes(status)) return 'failed';
       const cancelledStatuses = ['cancelled', 'canceled'];
-      if (cancelledStatuses.includes(status)) {
-        return 'cancelled';
-      }
-      
-      // Pending statuses
+      if (cancelledStatuses.includes(status)) return 'cancelled';
       const pendingStatuses = ['pending', 'pending_approval', 'pending approval'];
-      if (pendingStatuses.includes(status)) {
-        return 'pending';
-      }
-      
-      // Default: return as-is or pending
+      if (pendingStatuses.includes(status)) return 'pending';
       return status === 'pending' || status === 'pending_approval' ? 'pending' : 'completed';
     }
 
-    /**
-     * Synchronize a single transaction's status with its linked withdrawal
-     * @param {Object} transaction - The transaction object
-     * @param {string} transactionId - The transaction Firebase key
-     * @param {Object} withdrawal - The withdrawal object
-     * @param {string} withdrawalId - The withdrawal Firebase key
-     */
     async function syncTransactionStatusWithWithdrawal(transaction, transactionId, withdrawal, withdrawalId) {
       if (!currentUser || !transaction || !withdrawal) return;
-      
       const withdrawalStatus = withdrawal.status || 'pending';
       const expectedTransactionStatus = mapWithdrawalStatusToTransactionStatus(withdrawalStatus);
-      
-      // Skip if already correct
-      if ((transaction.status || 'pending') === expectedTransactionStatus) {
-        return;
-      }
-      
-      // Update the transaction status
+      if ((transaction.status || 'pending') === expectedTransactionStatus) return;
       try {
         const txRef = ref(db, `users/${currentUser.uid}/transactions/${transactionId}`);
         await update(txRef, {
@@ -4763,178 +4718,100 @@
           _withdrawalId: withdrawalId,
           _syncedAt: Date.now()
         });
-        console.log(`[Withdrawal Sync] Transaction ${transactionId} status updated to: ${expectedTransactionStatus} (from withdrawal ${withdrawalId} status: ${withdrawalStatus})`);
-        
-        // Update in-memory cache
         transaction.status = expectedTransactionStatus;
         transaction._syncedFromWithdrawal = true;
         transaction._withdrawalId = withdrawalId;
         transaction._syncedAt = Date.now();
+        console.log(`[Withdrawal Sync] Transaction ${transactionId} updated to: ${expectedTransactionStatus}`);
       } catch (error) {
         console.error(`[Withdrawal Sync] Failed to update transaction ${transactionId}:`, error);
       }
     }
 
-    /**
-     * Find matching transaction for a withdrawal using fallback matching
-     * @param {Object} withdrawal - The withdrawal object
-     * @param {string} withdrawalId - The withdrawal Firebase key
-     * @param {Array} transactionsList - List of transactions
-     * @returns {Object|null} - The matching transaction and its ID, or null
-     */
     function findMatchingTransactionForWithdrawal(withdrawal, withdrawalId, transactionsList) {
-      // Strategy 1: Look for transaction with withdrawalId stored
       for (const tx of transactionsList) {
         if (tx._withdrawalId === withdrawalId || tx.withdrawalId === withdrawalId) {
           return { transaction: tx, id: tx.id };
         }
       }
-      
-      // Strategy 2: Look for transaction with matching withdrawalId in the data
-      // (Some might have been saved with withdrawalId field directly)
       for (const tx of transactionsList) {
         if (tx.withdrawalId === withdrawalId) {
           return { transaction: tx, id: tx.id };
         }
       }
-      
-      // Strategy 3: Fallback matching using transaction details
-      // Use this only when exact ID matching fails
       const wAmount = typeof withdrawal.amount === 'number' ? withdrawal.amount : 0;
       const wCurrency = withdrawal.currency || 'USD';
       const wMethod = withdrawal.method || '';
       const wAccountType = withdrawal.accountType || '';
       const wAddress = withdrawal.address || '';
       const wTimestamp = withdrawal.timestamp || 0;
-      
-      // Look for transactions that match key withdrawal criteria
       for (const tx of transactionsList) {
-        // Skip if not a withdrawal type
         if (tx.type !== 'withdrawal' && tx.type !== 'withdraw') continue;
-        
-        // Check amount (within 0.01 tolerance)
         const txAmount = typeof tx.amount === 'number' ? tx.amount : 0;
         if (Math.abs(txAmount - wAmount) > 0.01) continue;
-        
-        // Check currency
         if ((tx.currency || 'USD') !== wCurrency) continue;
-        
-        // Check method (if available)
         const txMethod = tx.method || tx.paymentMethod || '';
         if (wMethod && txMethod && txMethod.toLowerCase() !== wMethod.toLowerCase()) continue;
-        
-        // Check account type (if available)
         const txAccountType = tx.accountType || '';
         if (wAccountType && txAccountType && txAccountType !== wAccountType) continue;
-        
-        // Check address (if available)
         const txAddress = tx.address || '';
         if (wAddress && txAddress && txAddress !== wAddress) continue;
-        
-        // Check timestamp (within 60 seconds)
         const txTimestamp = tx.timestamp || 0;
         if (wTimestamp && txTimestamp && Math.abs(txTimestamp - wTimestamp) < 60000) {
           return { transaction: tx, id: tx.id };
         }
       }
-      
-      // No matching transaction found
       return null;
     }
 
-    /**
-     * Initialize the withdrawal listener for real-time status sync
-     */
     function initializeWithdrawalListener() {
       if (!currentUser) return;
-      
-      // Clean up existing listener if any
       if (withdrawalListenerRef) {
         off(withdrawalListenerRef);
         withdrawalListenerRef = null;
         withdrawalListenerInitialized = false;
       }
-      
       const withdrawalsRef = ref(db, `users/${currentUser.uid}/withdrawals`);
       withdrawalListenerRef = withdrawalsRef;
-      
       onValue(withdrawalsRef, async (snapshot) => {
         const data = snapshot.val();
         withdrawalDataCache = data || {};
-        
-        if (!data || Object.keys(data).length === 0) {
-          // No withdrawals, no sync needed
-          return;
-        }
-        
-        // Iterate through each withdrawal and sync with transactions
+        if (!data || Object.keys(data).length === 0) return;
         for (const [withdrawalId, withdrawal] of Object.entries(data)) {
           if (!withdrawal || typeof withdrawal !== 'object') continue;
-          
-          // Find matching transaction
           const match = findMatchingTransactionForWithdrawal(withdrawal, withdrawalId, transactions);
-          
           if (match) {
-            // Sync the status
-            await syncTransactionStatusWithWithdrawal(
-              match.transaction,
-              match.id,
-              withdrawal,
-              withdrawalId
-            );
+            await syncTransactionStatusWithWithdrawal(match.transaction, match.id, withdrawal, withdrawalId);
           } else {
-            // No matching transaction found - this could be an orphan withdrawal
-            // or a withdrawal that was created without a transaction
             console.log(`[Withdrawal Sync] No matching transaction found for withdrawal ${withdrawalId}`);
           }
         }
-        
-        // Refresh the transaction display after syncing
         showTransactions(selectedTransactionTab || 'all');
-        
       }, (error) => {
         console.error('[Withdrawal Sync] Error listening to withdrawals:', error);
       });
-      
       withdrawalListenerInitialized = true;
       console.log('[Withdrawal Sync] Withdrawal listener initialized');
     }
 
-    /**
-     * Reconcile historical mismatched withdrawals on load
-     * This runs once when the user logs in to fix any existing mismatches
-     */
     async function reconcileHistoricalWithdrawals() {
       if (!currentUser) return;
-      
       try {
-        // Get all withdrawals
         const withdrawalsSnapshot = await get(child(ref(db), `users/${currentUser.uid}/withdrawals`));
         const withdrawalsData = withdrawalsSnapshot.val() || {};
-        
-        // Get all transactions
         const transactionsSnapshot = await get(child(ref(db), `users/${currentUser.uid}/transactions`));
         const transactionsData = transactionsSnapshot.val() || {};
-        
-        // Build transactions map
         const txMap = {};
         for (const [txId, tx] of Object.entries(transactionsData)) {
           if (tx && typeof tx === 'object') {
             txMap[txId] = tx;
           }
         }
-        
         let syncedCount = 0;
-        
-        // Iterate through withdrawals and find matching transactions
         for (const [withdrawalId, withdrawal] of Object.entries(withdrawalsData)) {
           if (!withdrawal || typeof withdrawal !== 'object') continue;
-          
-          // Search for matching transaction by withdrawalId first
           let foundTxId = null;
           let foundTx = null;
-          
-          // Look for transaction with _withdrawalId or withdrawalId field
           for (const [txId, tx] of Object.entries(txMap)) {
             if (tx._withdrawalId === withdrawalId || tx.withdrawalId === withdrawalId) {
               foundTxId = txId;
@@ -4942,8 +4819,6 @@
               break;
             }
           }
-          
-          // If not found by ID, use fallback matching
           if (!foundTxId) {
             const match = findMatchingTransactionForWithdrawal(withdrawal, withdrawalId, Object.values(txMap).map(tx => ({ ...tx, id: Object.keys(txMap).find(key => txMap[key] === tx) })));
             if (match) {
@@ -4951,15 +4826,11 @@
               foundTx = match.transaction;
             }
           }
-          
           if (foundTxId && foundTx) {
-            // Check if sync is needed
             const withdrawalStatus = withdrawal.status || 'pending';
             const expectedStatus = mapWithdrawalStatusToTransactionStatus(withdrawalStatus);
             const currentStatus = foundTx.status || 'pending';
-            
             if (currentStatus !== expectedStatus) {
-              // Update the transaction
               const txRef = ref(db, `users/${currentUser.uid}/transactions/${foundTxId}`);
               await update(txRef, {
                 status: expectedStatus,
@@ -4968,17 +4839,13 @@
                 _syncedAt: Date.now()
               });
               syncedCount++;
-              console.log(`[Withdrawal Sync] Historical reconciliation: Transaction ${foundTxId} status updated from ${currentStatus} to ${expectedStatus}`);
             }
           }
         }
-        
         if (syncedCount > 0) {
           console.log(`[Withdrawal Sync] Historical reconciliation complete: ${syncedCount} transactions updated`);
-          // Refresh transactions list
           await loadTransactionsFromFirebase();
         }
-        
       } catch (error) {
         console.error('[Withdrawal Sync] Error during historical reconciliation:', error);
       }
@@ -4991,16 +4858,13 @@
 
     function initializeTransactionListener() {
       if (!currentUser) return;
-      // Ensure we clean up any existing listener first.
       if (transactionListenerRef) {
         off(transactionListenerRef);
         transactionListenerRef = null;
         transactionListenerInitialized = false;
       }
-
       const transactionsRef = ref(db, `users/${currentUser.uid}/transactions`);
       transactionListenerRef = transactionsRef;
-
       onValue(transactionsRef, async (snapshot) => {
         const data = snapshot.val();
         const newTransactions = [];
@@ -5017,17 +4881,11 @@
           });
           newTransactions.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
-        // Update global transactions array.
         transactions = newTransactions;
-
-        // Process any newly approved/uncashed crypto deposits.
         await processApprovedCryptoDeposits(transactions);
-
         // WITHDRAWAL ACTIVATION FINAL FIX START - Check for successful deposits and update activation status
         await checkAndUpdateActivationStatus(transactions);
         // WITHDRAWAL ACTIVATION FINAL FIX END
-
-        // Update UI (transaction history).
         showTransactions(selectedTransactionTab || 'all');
       }, (error) => {
         console.error('Error listening to transactions:', error);
@@ -5037,15 +4895,11 @@
     // WITHDRAWAL ACTIVATION FINAL FIX START - Function to check and update activation status
     async function checkAndUpdateActivationStatus(transactionsList) {
       if (!currentUser) return;
-      
-      // Check if there is any successful deposit in the transaction history
       const hasSuccessfulDeposit = transactionsList.some(tx => 
         tx.type === 'deposit' && 
         (tx.status === 'completed' || tx.status === 'approved')
       );
-      
       if (hasSuccessfulDeposit && !isAccountActivated) {
-        // User has a successful deposit but is not yet activated
         isAccountActivated = true;
         try {
           await update(ref(db, `users/${currentUser.uid}`), {
@@ -5062,17 +4916,11 @@
     // ----- Load transactions (now also initializes listener) -----
     async function loadTransactionsFromFirebase() {
       if (!currentUser) return;
-      // Initialize the listener (it will load initial data).
       initializeTransactionListener();
-      
-      // WITHDRAWAL TRANSACTION SYNC FIX START - Initialize withdrawal listener
-      // Do this after transactions are loaded so we have the transaction list
       setTimeout(() => {
         initializeWithdrawalListener();
-        // Run historical reconciliation once
         reconcileHistoricalWithdrawals();
       }, 500);
-      // WITHDRAWAL TRANSACTION SYNC FIX END
     }
 
     // =============================================
@@ -5081,30 +4929,21 @@
     function showTransactions(type) {
       const list = document.getElementById('transactionsList');
       if (!list) return;
-
       selectedTransactionTab = type;
-
       // WITHDRAWAL TRANSACTION SYNC FIX START - Deduplicate transactions
-      // Create a set of withdrawal transaction IDs to avoid duplicates
       const seenWithdrawalIds = new Set();
       const dedupedTransactions = [];
-      
-      // First pass: collect transactions with _withdrawalId or withdrawalId
       for (const tx of transactions) {
         const withdrawalId = tx._withdrawalId || tx.withdrawalId;
         if (withdrawalId) {
-          // Only keep the first transaction for this withdrawal
           if (!seenWithdrawalIds.has(withdrawalId)) {
             seenWithdrawalIds.add(withdrawalId);
             dedupedTransactions.push(tx);
           }
         } else {
-          // Transactions without withdrawal linkage are kept as-is
           dedupedTransactions.push(tx);
         }
       }
-      
-      // Use deduped transactions for filtering
       let workingTransactions = dedupedTransactions;
       // WITHDRAWAL TRANSACTION SYNC FIX END
 
@@ -5130,17 +4969,14 @@
           hour: '2-digit',
           minute: '2-digit'
         });
-
         const isDeposit = t.type === 'deposit';
         const isWithdrawal = t.type === 'withdrawal' || t.type === 'withdraw';
         const isTransfer = t.type === 'transfer';
-
         let typeClass = 'deposit';
         let typeLabel = 'Deposit';
         let icon = 'fa-arrow-down';
         let amountSign = '+';
         let amountColor = 'positive';
-
         if (isWithdrawal) {
           typeClass = 'withdrawal';
           typeLabel = 'Withdrawal';
@@ -5154,33 +4990,25 @@
           amountSign = '';
           amountColor = 'positive';
         }
-
         const amount = t.amount || 0;
         const currency = t.currency || 'USD';
         const status = t.status || 'completed';
         const method = t.method || t.paymentMethod || '—';
-
-        // M-PESA TRANSACTION MASKING FIX START - Mask phone numbers in M-PESA transactions
+        // M-PESA TRANSACTION MASKING FIX START
         let displayAddress = t.address || '';
         if (isWithdrawal && method && method.toLowerCase() === 'mpesa' && displayAddress) {
-          // Mask using the same format as withdrawal input: 712XXX678
           const rawPhone = displayAddress.replace(/\D/g, '');
           if (rawPhone.length >= 9) {
-            // Extract last 3 digits (may include country code, so we take from the end)
             const last3 = rawPhone.slice(-3);
-            // Extract first 3 digits (from the end, take 3 before last 3)
             const middleStart = rawPhone.length - 6;
             const first3 = rawPhone.slice(middleStart, rawPhone.length - 3);
-            // If we have at least 6 digits, use the proper format
             if (rawPhone.length >= 6) {
               displayAddress = first3 + 'XXX' + last3;
             } else {
-              // Fallback: just show partial
               displayAddress = rawPhone.slice(0, 3) + 'XXX' + rawPhone.slice(-3);
             }
           }
         }
-        // Also handle deposit M-PESA phone numbers
         if (isDeposit && method && method.toLowerCase() === 'mpesa' && t.phoneNumber) {
           const rawPhone = String(t.phoneNumber).replace(/\D/g, '');
           if (rawPhone.length >= 9) {
@@ -5195,7 +5023,6 @@
           }
         }
         // M-PESA TRANSACTION MASKING FIX END
-
         html += `
                     <div class="transaction-item">
                         <div class="trans-top">
@@ -5225,9 +5052,7 @@
     function showTradeHistory(type) {
       const list = document.getElementById('tradeHistoryList');
       if (!list) return;
-
       let filteredTrades = [];
-
       if (type === 'all') {
         filteredTrades = [...closedTrades];
       } else if (type === 'wins') {
@@ -5235,16 +5060,12 @@
       } else if (type === 'losses') {
         filteredTrades = closedTrades.filter(t => t.result === 'LOSS');
       }
-
       if (filteredTrades.length === 0) {
         list.innerHTML = `<div class="deals-empty-state"><i class="fa-solid fa-clock-rotate-left"></i><p>No ${type === 'all' ? 'trades' : type} yet</p></div>`;
         return;
       }
-
       const sorted = filteredTrades.sort((a, b) => (b.closeTime || b.entryTime) - (a.closeTime || a.entryTime));
-
       let html = '<div style="display:flex;flex-direction:column;gap:8px;width:100%;">';
-
       sorted.slice(0, 20).forEach(trade => {
         const direction = trade.side === 'BUY' ? 'Buy' : 'Sell';
         const directionClass = trade.side === 'BUY' ? 'buy' : 'sell';
@@ -5264,7 +5085,6 @@
         const closePrice = trade.closePrice ? trade.closePrice.toFixed(5) : '---';
         const amount = trade.amount ? trade.amount.toFixed(2) : '0.00';
         const profit = trade.profit ? trade.profit.toFixed(2) : '0.00';
-
         html += `
                     <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:10px 12px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -5286,7 +5106,6 @@
                     </div>
                 `;
       });
-
       html += '</div>';
       list.innerHTML = html;
     }
@@ -5444,9 +5263,6 @@
             'real-usd': data['real-usd'] ?? 0.00,
             'real-usdt': data['real-usdt'] ?? 0.00
           };
-          // FIREBASE AUTHORITATIVE FLAG: Set to true once Firebase returns the
-          // initial snapshot. This prevents the loader from hiding before
-          // Firebase balances are available.
           balancesLoadedFromFirebase = true;
           updateAccountUI(currentAccountType);
           updateExecutionAccountDisplay();
@@ -5458,10 +5274,8 @@
               balanceSpan.textContent = `${currency} ${(accountBalances[accType] || 0).toFixed(2)}`;
             }
           });
-          
           // --- DEPOSIT LIVE BALANCE FIX: Update Deposit UI from Firebase balance update ---
           updateDepositAccountUI();
-          
           // Update withdrawal account display
           updateWithdrawAccountUI();
           // Update transfer UI
@@ -5470,9 +5284,6 @@
           updateExecutionAccountDisplay();
           console.log('[Real-time] Balances updated:', accountBalances);
         } else {
-          // Firebase returned an empty snapshot for this user's balances.
-          // This is a valid state for a brand-new user who has never had
-          // balances initialized. Initialize them in Firebase and set the flag.
           accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
           balancesLoadedFromFirebase = true;
           saveBalancesToFirebase();
@@ -5481,8 +5292,6 @@
         }
       }, (error) => {
         console.error('Error listening to balances:', error);
-        // Even on error, we must not leave the loader spinning forever.
-        // Fall back to safe defaults and set the flag so the loader can hide.
         balancesLoadedFromFirebase = true;
         accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
         updateAccountUI(currentAccountType);
@@ -5492,10 +5301,6 @@
     // =============================================
     // LOAD BALANCES FROM FIREBASE (AUTHORITATIVE)
     // =============================================
-    // This function now reads ONLY from Firebase. It does NOT read from
-    // localStorage. The real-time listener is the sole source of truth.
-    // We keep this function because it is awaited during auth initialization
-    // to ensure the auth flow waits for the initial Firebase balance snapshot.
     async function loadBalancesFromFirebase() {
       if (!currentUser) return null;
 
@@ -5512,9 +5317,6 @@
               'real-usdt': data.balances['real-usdt'] ?? 0.00
             };
           } else {
-            // No balances node exists in Firebase for this user.
-            // This is a valid state for a brand-new user.
-            // Initialize the balances in Firebase and use those defaults.
             accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
             await saveBalancesToFirebase();
           }
@@ -5529,20 +5331,16 @@
           if (data.accountActivated !== undefined) {
             isAccountActivated = data.accountActivated;
           } else {
-            // Default to false for new users or those without the field
             isAccountActivated = false;
           }
           console.log('[Activation] Loaded isAccountActivated:', isAccountActivated);
           // WITHDRAWAL ACTIVATION FINAL FIX END
-          // The authoritative balances have been loaded from Firebase.
           balancesLoadedFromFirebase = true;
           return accountBalances;
         }
         return null;
       } catch (error) {
         console.error('Error loading balances:', error);
-        // On error, we still need to allow the app to proceed.
-        // Set the flag and use safe defaults.
         balancesLoadedFromFirebase = true;
         accountBalances = { 'demo': DEMO_BALANCE, 'real-usd': 0.00, 'real-usdt': 0.00 };
         return accountBalances;
@@ -5589,16 +5387,12 @@
     async function saveTradeHistoryToFirebase(trades) {
       if (!currentUser) return;
       try {
-        // TRADE EXPIRY PERSISTENCE FIX START
-        // Ensure we only keep the most recent 15 completed trades.
-        // Use a stable ordering key that always exists.
         const sorted = [...trades].sort((a, b) => {
           const aTime = a.closeTime || a.entryTime || 0;
           const bTime = b.closeTime || b.entryTime || 0;
-          return bTime - aTime; // newest first
+          return bTime - aTime;
         });
         const recentTrades = sorted.slice(0, 15);
-        // TRADE EXPIRY PERSISTENCE FIX END
         await set(ref(db, `users/${currentUser.uid}/tradeHistory`), recentTrades);
         saveTradesToLocalStorage(recentTrades);
       } catch (error) {
@@ -5609,13 +5403,7 @@
     async function loadTradeHistoryFromFirebase() {
       if (!currentUser) return;
 
-      // TRADE EXPIRY PERSISTENCE FIX START
-      // Firebase must be the reliable cross-session source of truth for the
-      // most recent 15 completed trades. localStorage may be used as a cache,
-      // but it must never permanently prevent newer Firebase history from loading.
       const userSpecificTradesKey = `olymmatix_trades_${currentUser.uid}`;
-
-      // First, try Firebase (authoritative source).
       let firebaseLoaded = false;
       try {
         const dbRef = ref(db);
@@ -5623,7 +5411,6 @@
         if (snapshot.exists()) {
           const trades = snapshot.val();
           if (Array.isArray(trades) && trades.length > 0) {
-            // Keep only the newest 15 (defensive, in case an older schema stored more).
             const sorted = [...trades].sort((a, b) => {
               const aTime = a.closeTime || a.entryTime || 0;
               const bTime = b.closeTime || b.entryTime || 0;
@@ -5631,7 +5418,6 @@
             });
             closedTrades = sorted.slice(0, 15);
             firebaseLoaded = true;
-            // Refresh the local cache with the authoritative Firebase data.
             try {
               localStorage.setItem(userSpecificTradesKey, JSON.stringify(closedTrades));
             } catch (e) {}
@@ -5645,7 +5431,6 @@
         console.error('Error loading trade history from Firebase:', error);
       }
 
-      // Only if Firebase has no data, fall back to the user-specific localStorage cache.
       if (!firebaseLoaded) {
         try {
           const localTradesForUser = localStorage.getItem(userSpecificTradesKey);
@@ -5671,7 +5456,6 @@
         updateTradeDisplay();
         showTradeHistory('all');
       }
-      // TRADE EXPIRY PERSISTENCE FIX END
     }
 
     async function loadCopyTradingData() {
@@ -5713,29 +5497,19 @@
 
     // ====================================================================
     // AUTHORITATIVE ACCOUNT UI SYNCHRONIZATION
-    // FIX: The selected account name, icon, and balance now always match
-    //      the currently selected account type.
-    // PATCH: Guard against null account type so no Demo UI is shown
-    //      before the saved account has been resolved.
     // ====================================================================
     function updateAccountUI(accountType) {
-      // PATCH: If accountType is null/undefined, do not render anything.
-      // This prevents the startup UI from exposing a Demo/default account
-      // before the saved account has been resolved from localStorage.
       if (!accountType) {
         console.log('[Account UI] Skipping render: accountType is null (startup not yet resolved).');
         return;
       }
 
-      // 1. Ensure the current account type is set.
       currentAccountType = accountType;
 
-      // 2. Get the balance and currency for the account.
       const balance = accountBalances[accountType] || 0;
       const currency = accountType === 'real-usdt' ? 'USDT' : 'USD';
       const displayBalance = `${currency} ${balance.toFixed(2)}`;
 
-      // 3. Update the Market top-bar account title, icon, and balance.
       const accountInfo = accountDisplayMap[accountType] || accountDisplayMap['demo'];
       if (currentAccTitle) currentAccTitle.textContent = accountInfo.name;
       if (topBarIcon) {
@@ -5743,13 +5517,10 @@
       }
       if (currentAccVal) currentAccVal.textContent = displayBalance;
 
-      // 4. Update the Account left panel balance.
       if (accountBalanceDisplay) accountBalanceDisplay.textContent = displayBalance;
 
-      // 5. Update execution account display (robot settings).
       updateExecutionAccountDisplay();
 
-      // 6. Update account selection cards.
       const cards = document.querySelectorAll('.acc-select-card');
       cards.forEach(card => {
         const accType = card.getAttribute('data-account');
@@ -5770,17 +5541,9 @@
         }
       });
 
-      // 7. Update verification status.
       updateVerificationStatusUI();
-
-      // 8. Update the deposit form account display if it is visible.
-      // DEPOSIT LIVE BALANCE FIX: Use the dedicated function.
       updateDepositAccountUI();
-
-      // 9. Update the transfer UI.
       updateTransferUI();
-
-      // 10. Update withdrawal account selection UI if present.
       updateWithdrawAccountUI();
     }
 
@@ -5789,8 +5552,6 @@
     // ====================================================================
 
     function updateExecutionAccountDisplay() {
-      // PATCH: Do not render execution account UI until the account
-      // has been resolved during startup.
       if (!botExecutionAccount) {
         console.log('[Exec Account UI] Skipping render: botExecutionAccount is null (startup not yet resolved).');
         return;
@@ -5816,15 +5577,11 @@
           card.classList.remove('disabled');
         }
       }
-      // Also refresh inline account balances & active highlight.
       updateInlineAccountBalances();
     }
 
-    // Helper to update inline execution account list (balances & active state).
     function updateInlineAccountBalances() {
-      // PATCH: Do not render until botExecutionAccount is resolved.
       if (!botExecutionAccount) return;
-
       const inlineCards = document.querySelectorAll('#inlineExecutionAccounts .acc-select-card');
       inlineCards.forEach(card => {
         const accType = card.getAttribute('data-account');
@@ -6206,9 +5963,14 @@
         showTradeHistory('all');
 
         // Reset the Firebase balance authority flag for the new user.
-        // This ensures we wait for Firebase to return the balance snapshot
-        // for THIS user before hiding the loader.
         balancesLoadedFromFirebase = false;
+
+        // ============================================================
+        // STARTUP SYNCHRONIZATION FLAG RESET
+        // ============================================================
+        // The loader must remain visible during the entire startup
+        // sequence. Reset this flag so the loader stays visible.
+        startupReady = false;
 
         // PATCH: Reset account state to null for the new user so that
         // no stale Demo UI can be rendered before the saved account is resolved.
@@ -6281,13 +6043,8 @@
             // ============================================================
             // PANEL PERSISTENCE FIX START
             // ============================================================
-            // Do NOT force Market here. The saved panel state will be
-            // restored by restorePanelAfterRefresh() which is called later.
-            // We only initialize the panel stack if no saved state exists.
-            // ============================================================
             const savedPanelState = getSavedPanelState();
             if (!savedPanelState) {
-              // No saved panel state: default to Market
               currentPanelStack = [];
               if (buttons.market) buttons.market.classList.add('active');
               if (chartOverlay) chartOverlay.classList.remove('active');
@@ -6295,8 +6052,6 @@
               savePanelState(ROOT_PANEL, []);
               console.log('[Panel Persist] No saved panel state, defaulting to Market');
             } else {
-              // Saved panel state exists: leave it intact for restoration.
-              // Do NOT overwrite it with Market.
               console.log('[Panel Persist] Saved panel state found, will restore:', savedPanelState);
             }
             // ============================================================
@@ -6309,12 +6064,11 @@
             // ============================================================
             const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
             const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = null; // PATCH: null means "not yet resolved"
+            let accountToRestore = null;
             if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
               accountToRestore = savedAccount;
               console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
             } else {
-              // PATCH: Only fall back to Demo when there is NO valid saved account.
               accountToRestore = 'demo';
               console.log('[Account Persist] No valid saved account found, using demo fallback.');
             }
@@ -6326,9 +6080,6 @@
             // --------------------------------------------
 
             // BOT STATISTICS RESTORATION ON LOGIN
-            // Only restore statistics if the bot is supposed to be running.
-            // If the user manually stopped the bot, the persisted statistics
-            // were cleared and must not be resurrected.
             if (loadBotRunningState()) {
               const savedStats = loadBotStatsFromLocalStorage();
               if (savedStats) {
@@ -6347,7 +6098,6 @@
             }
 
             isFirstLoad = false;
-            hideFullPageLoader();
 
             // ---- Restore robot instrument after login ----
             const savedRobotInstrument = localStorage.getItem('robotSelectedInstrument');
@@ -6371,7 +6121,6 @@
             // ====================================================================
             // RISK PERSISTENCE FIX START
             // ====================================================================
-            // Restore saved risk management values for this user
             restoreRiskManagementValues();
             // ====================================================================
             // RISK PERSISTENCE FIX END
@@ -6380,9 +6129,6 @@
             // ====================================================================
             // BOT TRADE LIFECYCLE FIX START
             // ====================================================================
-            // Restore any previously persisted active bot trade (from localStorage)
-            // so browser refresh does not lose an already-open bot trade.
-            // Any trade whose expiryTime has already passed is settled immediately.
             restorePersistedActiveBotTrade();
             ensureBotExpiryMonitorRunning();
             // ====================================================================
@@ -6444,7 +6190,6 @@
             // ====================================================================
             // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
             // ====================================================================
-            // --- USER STAKE / TRADE LIMITS ---
             if (currentUser) {
               const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
               onValue(tradeControlRef, (snapshot) => {
@@ -6453,14 +6198,13 @@
                   if (typeof data.minStake === 'number' && data.minStake > 0) {
                     window.currentMinStake = data.minStake;
                   } else {
-                    window.currentMinStake = 5; // safe fallback
+                    window.currentMinStake = 5;
                   }
                   if (typeof data.maxStake === 'number' && data.maxStake > 0) {
                     window.currentMaxStake = data.maxStake;
                   } else {
-                    window.currentMaxStake = 1000; // safe fallback
+                    window.currentMaxStake = 1000;
                   }
-                  // Ensure min <= max
                   if (window.currentMinStake > window.currentMaxStake) {
                     console.warn('[Dynamic Limits] minStake > maxStake, adjusting.');
                     const temp = window.currentMinStake;
@@ -6468,18 +6212,15 @@
                     window.currentMaxStake = temp;
                   }
                   console.log('[Dynamic Limits] Stake limits updated: min=', window.currentMinStake, 'max=', window.currentMaxStake);
-                  // Update manual stake input and bot stake input accordingly
                   updateStakeLimitsUI();
                 }
               }, (error) => {
                 console.error('[Dynamic Limits] Error listening to tradeControl:', error);
-                // Fallback values
                 window.currentMinStake = 5;
                 window.currentMaxStake = 1000;
               });
             }
 
-            // Deposit minimum listener
             const depositLimitsRef = ref(db, 'settings/depositLimits');
             onValue(depositLimitsRef, (snapshot) => {
               const data = snapshot.val();
@@ -6494,7 +6235,6 @@
                 } else {
                   window.maximumDeposit = 10000;
                 }
-                // Ensure min <= max
                 if (window.minimumDeposit > window.maximumDeposit) {
                   console.warn('[Dynamic Limits] minDeposit > maxDeposit, adjusting.');
                   const temp = window.minimumDeposit;
@@ -6502,10 +6242,8 @@
                   window.maximumDeposit = temp;
                 }
                 console.log('[Dynamic Limits] Deposit limits updated: min=', window.minimumDeposit, 'max=', window.maximumDeposit);
-                // Update deposit UI
                 updateDepositMinUI(window.minimumDeposit);
                 updateKesDepositMinLabel(window.minimumDeposit);
-                // Update max deposit UI if needed (e.g., in USDT deposit)
                 updateUsdtDepositMaxUI(window.maximumDeposit);
               }
             }, (error) => {
@@ -6514,7 +6252,6 @@
               window.maximumDeposit = 10000;
             });
 
-            // Withdrawal minimum listener
             const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
             onValue(withdrawalLimitsRef, (snapshot) => {
               const data = snapshot.val();
@@ -6529,7 +6266,6 @@
                 } else {
                   window.maximumWithdrawal = 10000;
                 }
-                // Ensure min <= max
                 if (window.minimumWithdrawal > window.maximumWithdrawal) {
                   console.warn('[Dynamic Limits] minWithdrawal > maxWithdrawal, adjusting.');
                   const temp = window.minimumWithdrawal;
@@ -6616,13 +6352,8 @@
             // ============================================================
             // PANEL PERSISTENCE FIX START
             // ============================================================
-            // Do NOT force Market here. The saved panel state will be
-            // restored by restorePanelAfterRefresh() which is called later.
-            // We only initialize the panel stack if no saved state exists.
-            // ============================================================
             const savedPanelStateNew = getSavedPanelState();
             if (!savedPanelStateNew) {
-              // No saved panel state: default to Market
               currentPanelStack = [];
               if (buttons.market) buttons.market.classList.add('active');
               if (chartOverlay) chartOverlay.classList.remove('active');
@@ -6630,7 +6361,6 @@
               savePanelState(ROOT_PANEL, []);
               console.log('[Panel Persist] No saved panel state, defaulting to Market (new user)');
             } else {
-              // Saved panel state exists: leave it intact for restoration.
               console.log('[Panel Persist] Saved panel state found, will restore (new user):', savedPanelStateNew);
             }
             // ============================================================
@@ -6643,12 +6373,11 @@
             // ============================================================
             const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
             const savedAccount = localStorage.getItem(savedAccountKey);
-            let accountToRestore = null; // PATCH: null means "not yet resolved"
+            let accountToRestore = null;
             if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
               accountToRestore = savedAccount;
               console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
             } else {
-              // PATCH: Only fall back to Demo when there is NO valid saved account.
               accountToRestore = 'demo';
               console.log('[Account Persist] No valid saved account found, using demo fallback.');
             }
@@ -6662,14 +6391,12 @@
             // ====================================================================
             // RISK PERSISTENCE FIX START
             // ====================================================================
-            // Restore saved risk management values for this user (new user branch)
             restoreRiskManagementValues();
             // ====================================================================
             // RISK PERSISTENCE FIX END
             // ====================================================================
 
             isFirstLoad = false;
-            hideFullPageLoader();
 
             // ---- Restore robot instrument after login ----
             const savedRobotInstrument = localStorage.getItem('robotSelectedInstrument');
@@ -6693,9 +6420,6 @@
             // ====================================================================
             // BOT TRADE LIFECYCLE FIX START
             // ====================================================================
-            // Restore any previously persisted active bot trade (from localStorage)
-            // so browser refresh does not lose an already-open bot trade.
-            // Any trade whose expiryTime has already passed is settled immediately.
             restorePersistedActiveBotTrade();
             ensureBotExpiryMonitorRunning();
             // ====================================================================
@@ -6722,7 +6446,6 @@
             // ====================================================================
             // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
             // ====================================================================
-            // --- USER STAKE / TRADE LIMITS ---
             if (currentUser) {
               const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
               onValue(tradeControlRef, (snapshot) => {
@@ -6754,7 +6477,6 @@
               });
             }
 
-            // Deposit minimum listener
             const depositLimitsRef = ref(db, 'settings/depositLimits');
             onValue(depositLimitsRef, (snapshot) => {
               const data = snapshot.val();
@@ -6786,7 +6508,6 @@
               window.maximumDeposit = 10000;
             });
 
-            // Withdrawal minimum listener
             const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
             onValue(withdrawalLimitsRef, (snapshot) => {
               const data = snapshot.val();
@@ -6851,13 +6572,8 @@
           // ============================================================
           // PANEL PERSISTENCE FIX START
           // ============================================================
-          // Do NOT force Market here. The saved panel state will be
-          // restored by restorePanelAfterRefresh() which is called later.
-          // We only initialize the panel stack if no saved state exists.
-          // ============================================================
           const savedPanelStateErr = getSavedPanelState();
           if (!savedPanelStateErr) {
-            // No saved panel state: default to Market
             currentPanelStack = [];
             if (buttons.market) buttons.market.classList.add('active');
             if (chartOverlay) chartOverlay.classList.remove('active');
@@ -6865,7 +6581,6 @@
             savePanelState(ROOT_PANEL, []);
             console.log('[Panel Persist] No saved panel state, defaulting to Market (error branch)');
           } else {
-            // Saved panel state exists: leave it intact for restoration.
             console.log('[Panel Persist] Saved panel state found, will restore (error branch):', savedPanelStateErr);
           }
           // ============================================================
@@ -6878,12 +6593,11 @@
           // ============================================================
           const savedAccountKey = `olymmatix_selected_account_${currentUser.uid}`;
           const savedAccount = localStorage.getItem(savedAccountKey);
-          let accountToRestore = null; // PATCH: null means "not yet resolved"
+          let accountToRestore = null;
           if (savedAccount && (savedAccount === 'demo' || savedAccount === 'real-usd' || savedAccount === 'real-usdt')) {
             accountToRestore = savedAccount;
             console.log(`[Account Persist] Restoring saved account: ${accountToRestore}`);
           } else {
-            // PATCH: Only fall back to Demo when there is NO valid saved account.
             accountToRestore = 'demo';
             console.log('[Account Persist] No valid saved account found, using demo fallback.');
           }
@@ -6897,14 +6611,12 @@
           // ====================================================================
           // RISK PERSISTENCE FIX START
           // ====================================================================
-          // Restore saved risk management values for this user (error branch)
           restoreRiskManagementValues();
           // ====================================================================
           // RISK PERSISTENCE FIX END
           // ====================================================================
 
           isFirstLoad = false;
-          hideFullPageLoader();
 
           // ---- Restore robot instrument after login ----
           const savedRobotInstrument = localStorage.getItem('robotSelectedInstrument');
@@ -6928,9 +6640,6 @@
           // ====================================================================
           // BOT TRADE LIFECYCLE FIX START
           // ====================================================================
-          // Restore any previously persisted active bot trade (from localStorage)
-          // so browser refresh does not lose an already-open bot trade.
-          // Any trade whose expiryTime has already passed is settled immediately.
           restorePersistedActiveBotTrade();
           ensureBotExpiryMonitorRunning();
           // ====================================================================
@@ -6957,7 +6666,6 @@
           // ====================================================================
           // DYNAMIC LIMITS PATCH START - SET UP LISTENERS
           // ====================================================================
-          // --- USER STAKE / TRADE LIMITS ---
           if (currentUser) {
             const tradeControlRef = ref(db, `users/${currentUser.uid}/tradeControl`);
             onValue(tradeControlRef, (snapshot) => {
@@ -6989,7 +6697,6 @@
             });
           }
 
-          // Deposit minimum listener
           const depositLimitsRef = ref(db, 'settings/depositLimits');
           onValue(depositLimitsRef, (snapshot) => {
             const data = snapshot.val();
@@ -7021,7 +6728,6 @@
             window.maximumDeposit = 10000;
           });
 
-          // Withdrawal minimum listener
           const withdrawalLimitsRef = ref(db, 'settings/withdrawalLimits');
           onValue(withdrawalLimitsRef, (snapshot) => {
             const data = snapshot.val();
@@ -7057,12 +6763,26 @@
           // ====================================================================
 
         }
+
+        // ====================================================================
+        // STARTUP SYNCHRONIZATION COMPLETE
+        // ====================================================================
+        // All startup restoration work has been performed while the
+        // existing full-page loader was visible. Now mark startup as ready
+        // and hide the loader exactly once.
+        // ====================================================================
+        startupReady = true;
+        hideFullPageLoader();
+        console.log('[Loader] Hidden: startup synchronization complete for user', user.uid);
+
       } else {
         // User is logged out. Clear all user-specific trade state.
         activeTrades = [];
         closedTrades = [];
         // Reset the Firebase balance authority flag for the logged-out state.
         balancesLoadedFromFirebase = false;
+        // Reset startup flag for the logged-out state.
+        startupReady = false;
         // PATCH: Reset account state to null on logout so no stale account
         // state leaks into the next login.
         currentAccountType = null;
@@ -7093,8 +6813,6 @@
         supportCurrentUid = null;
         // Clear any user-specific localStorage trades
         try {
-          // Remove all user-specific trade keys (if we had any).
-          // We'll just remove the generic key and any prefixed keys.
           const keysToRemove = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -7103,12 +6821,9 @@
             }
           }
           keysToRemove.forEach(key => localStorage.removeItem(key));
-          localStorage.removeItem(TRADES_STORAGE_KEY); // Remove generic key as well.
+          localStorage.removeItem(TRADES_STORAGE_KEY);
         } catch (e) {}
-        // Also reset any bot running state on logout to prevent residual issues.
         saveBotRunningState(false);
-        // NOTE: Do NOT clear bot statistics on logout. They must persist across logout/login.
-        // NOTE: Do NOT clear risk management settings on logout. They must persist across logout/login.
         // Redirect to login.
         window.location.href = 'index.html';
       }
@@ -7163,18 +6878,12 @@
           saveBotRunningState(false);
           // ============================================================
           // PANEL PERSISTENCE RESET ON LOGOUT
-          // Clear only the current-panel state so the next login
-          // starts at Market. All other data is preserved.
           // ============================================================
           try {
             localStorage.removeItem(PANEL_STATE_KEY);
             console.log('[Panel Persist] Cleared panel state on explicit logout.');
           } catch (e) {}
           // ============================================================
-          // NOTE: Bot statistics are intentionally NOT cleared on logout.
-          // They persist in localStorage under olymmatix_bot_stats_${uid}.
-          // NOTE: Risk management settings are intentionally NOT cleared on logout.
-          // They persist in localStorage under olymmatix_risk_management_${uid}.
           await signOut(auth);
           window.location.href = 'index.html';
         } catch (error) {
@@ -7333,9 +7042,7 @@
       copyTrading: document.getElementById('copyTradingPanel'),
       withdrawal: document.getElementById('withdrawalPanel'),
       withdrawPaymentMethod: document.getElementById('withdrawPaymentMethodPanel'),
-      // WITHDRAW ACCOUNT SELECTION PATCH START – register the new panel
       withdrawAccountChoice: document.getElementById('withdrawAccountChoicePanel')
-      // WITHDRAW ACCOUNT SELECTION PATCH END
     };
 
     const buttons = {
@@ -7456,9 +7163,7 @@
         'withdrawal': 'account',
         'withdrawPaymentMethod': 'account',
         'strategySelection': 'robot',
-        // WITHDRAW ACCOUNT SELECTION PATCH START – map new panel to "account" button
         'withdrawAccountChoice': 'account'
-        // WITHDRAW ACCOUNT SELECTION PATCH END
       };
       return map[panelKey] || 'market';
     }
@@ -7608,11 +7313,8 @@
       'backFromPaymentMethodChoice', 'backFromUsdtDeposit', 'backFromIdentityVerification',
       'backFromProofOfAddress', 'backFromTransactions', 'backFromReferral', 'backFromTradeHistory',
       'backFromCopyTrading', 'backFromTransfer', 'backFromWithdrawal', 'backFromWithdrawPaymentMethod',
-      // WITHDRAW ACCOUNT SELECTION PATCH START – add new back button
       'backFromWithdrawAccountChoice',
-      // SUPPORT CHAT: new back button for chat panel
       'closeSupportChat'
-      // WITHDRAW ACCOUNT SELECTION PATCH END
     ];
 
     backButtonIds.forEach(id => {
@@ -7635,12 +7337,8 @@
 
     // =============================================
     // DEPOSIT BACK NAVIGATION FIX START
-    // Override the back button behavior for Deposit child panels
-    // These panels must ALWAYS return to Main Deposit (accountDepositForm)
-    // regardless of browser history state.
     // =============================================
 
-    // List of Deposit child panels that should return to Main Deposit
     const depositChildPanelIds = [
         'backFromDepositAccountChoice',
         'backFromPaymentMethodChoice',
@@ -7650,36 +7348,28 @@
     depositChildPanelIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            // Remove any existing listeners by cloning and replacing
             const newEl = el.cloneNode(true);
             el.parentNode.replaceChild(newEl, el);
             
-            // Add the correct behavior: always return to Main Deposit
             newEl.addEventListener('click', function(e) {
                 e.stopPropagation();
                 
-                // Hide all Deposit child panels
                 if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
                 if (panels.paymentMethodChoice) panels.paymentMethodChoice.classList.add('hidden');
                 if (panels.kesDepositAmount) panels.kesDepositAmount.classList.add('hidden');
                 
-                // Show Main Deposit form
                 if (panels.accountDepositForm) {
                     panels.accountDepositForm.classList.remove('hidden');
                     if (chartOverlay) chartOverlay.classList.add('active');
                 }
                 
-                // Update the panel stack to reflect we're at Main Deposit
-                // Remove any child panels from the stack
                 const childPanels = ['depositAccountChoice', 'paymentMethodChoice', 'kesDepositAmount'];
                 currentPanelStack = currentPanelStack.filter(p => !childPanels.includes(p));
                 
-                // If Main Deposit is not in the stack, add it
                 if (!currentPanelStack.includes('accountDepositForm')) {
                     currentPanelStack.push('accountDepositForm');
                 }
                 
-                // Update history state to match
                 history.replaceState({ 
                     panel: 'accountDepositForm', 
                     stack: currentPanelStack 
@@ -7738,17 +7428,7 @@
 
     accountCards.forEach(card => {
       card.addEventListener('click', function(e) {
-        // ============================================================
-        // ROBOT SETTINGS EXECUTION ACCOUNT GUARD
-        // ============================================================
-        // If this card belongs to the Robot Settings inline execution
-        // account selector (#inlineExecutionAccounts), ignore it here.
-        // The dedicated inline handler on #inlineExecutionAccounts is
-        // solely responsible for selecting the execution account,
-        // collapsing the inline list, and keeping Robot Settings open.
-        // This general handler must NOT run for those cards.
         if (this.closest('#inlineExecutionAccounts')) return;
-        // ============================================================
 
         if (this.classList.contains('payment-method-option')) return;
         e.stopPropagation();
@@ -7783,15 +7463,11 @@
 
         currentAccountType = accountType;
         botExecutionAccount = accountType;
-        // ============================================================
-        // SELECTED ACCOUNT PERSISTENCE - SAVE
-        // ============================================================
         if (currentUser) {
           const saveKey = `olymmatix_selected_account_${currentUser.uid}`;
           localStorage.setItem(saveKey, accountType);
           console.log(`[Account Persist] Saved account: ${accountType} for user ${currentUser.uid}`);
         }
-        // ============================================================
         updateAccountUI(accountType);
         updateExecutionAccountDisplay();
 
@@ -7811,10 +7487,6 @@
     // =============================================
     // EXECUTION ACCOUNT CARD - INLINE SELECTOR
     // =============================================
-    // This is the Robot Settings execution account selector.
-    // Clicking the card toggles an inline list of execution accounts.
-    // Selecting an account applies it and collapses the list.
-    // Robot Settings remains open. No navigation, no history changes.
     const execAccountCard = document.getElementById('execAccountCard');
     const inlineExecutionAccounts = document.getElementById('inlineExecutionAccounts');
     const execAccountArrow = document.getElementById('execAccountArrow');
@@ -7846,7 +7518,6 @@
 
         if (inlineExecutionAccounts) {
           if (inlineExecutionAccounts.style.display === 'none') {
-            // Refresh balances & active highlight before showing.
             updateInlineAccountBalances();
             inlineExecutionAccounts.style.display = 'block';
             if (execAccountArrow) execAccountArrow.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
@@ -7858,23 +7529,10 @@
       });
     }
 
-    // Delegated handler for selecting an execution account from the inline list.
-    // ============================================================
-    // ACCOUNT SYNCHRONIZATION FIX
-    // ============================================================
-    // When an account is selected from the Robot Settings inline
-    // execution account selector, we must also update the primary
-    // account state (currentAccountType) so that the Dashboard
-    // account selector stays synchronized. We reuse the existing
-    // authoritative updateAccountUI() function which already handles
-    // updating the Dashboard pill, balance displays, account selection
-    // cards, execution account display, and all dependent UIs.
-    // ============================================================
     if (inlineExecutionAccounts) {
       inlineExecutionAccounts.addEventListener('click', function(e) {
         const target = e.target.closest('.acc-select-card');
         if (!target) return;
-        // Skip non-account cards (e.g., payment method options, if any).
         if (target.classList.contains('payment-method-option')) return;
 
         if (botRunning) {
@@ -7902,38 +7560,23 @@
         if (!accountType) return;
         if (!(accountType === 'demo' || accountType === 'real-usd' || accountType === 'real-usdt')) return;
 
-        // Apply the selected execution account.
         botExecutionAccount = accountType;
-
-        // Also update the primary account state so the Dashboard stays synchronized.
         currentAccountType = accountType;
 
-        // Persist the selection (same key used by the main account selection).
         if (currentUser) {
           const saveKey = `olymmatix_selected_account_${currentUser.uid}`;
           localStorage.setItem(saveKey, accountType);
         }
 
-        // Use the authoritative account UI sync function.
-        // This updates:
-        //   - Dashboard top-bar pill (icon, title, balance)
-        //   - Account left panel balance
-        //   - Execution account display (Robot Settings card)
-        //   - Inline execution account list (balances + active highlight)
-        //   - Account selection cards (active/disabled + balances)
-        //   - Deposit UI, Transfer UI, Withdraw UI
         updateAccountUI(accountType);
 
-        // Collapse the inline list and restore the chevron.
         inlineExecutionAccounts.style.display = 'none';
         if (execAccountArrow) execAccountArrow.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
 
-        // Robot Settings stays open. No history/navigation changes.
         console.log('[Robot] Execution account changed to:', botExecutionAccount);
       });
     }
 
-    // Ensure the inline list starts closed.
     if (inlineExecutionAccounts) {
       inlineExecutionAccounts.style.display = 'none';
     }
@@ -8038,7 +7681,6 @@
         currentMinStake = currentMaxStake;
         currentMaxStake = temp;
       }
-      // Ensure currentAmount is within new bounds
       if (currentAmount < currentMinStake) currentAmount = currentMinStake;
       if (currentAmount > currentMaxStake) currentAmount = currentMaxStake;
       updateManualStakeDisplay();
@@ -8243,15 +7885,12 @@
         div.className = 'asset-item';
         if (isActive) div.classList.add('active');
         div.innerHTML = `<span class="asset-name">${asset}</span>`;
-        // 🔥 MARKET INSTRUMENT NAVIGATION FIX START
         div.addEventListener('click', (e) => {
           e.stopPropagation();
           
-          // Check if user is currently on Market (root) or in Robot panel
           const isOnMarket = currentPanelStack.length === 0 || 
                              (currentPanelStack.length === 1 && currentPanelStack[0] === 'assetSelection');
           
-          // Store current panel state before making changes
           const wasRobotOpen = panels.robot && !panels.robot.classList.contains('hidden');
           const wasAssetSelectionOpen = panels.assetSelection && !panels.assetSelection.classList.contains('hidden');
           
@@ -8260,29 +7899,23 @@
           changeAsset(asset);
           renderAssetList();
           
-          // ONLY open Robot Settings if we were already in Robot context
-          // If we came from Market (via topAssetSelector), stay on Market
           if (wasRobotOpen) {
-            // User was in Robot Settings, keep them there
             if (panels.robot) {
               panels.robot.classList.remove('hidden');
               if (buttons.robot) buttons.robot.classList.add('active');
               if (chartOverlay) chartOverlay.classList.add('active');
             }
           } else if (wasAssetSelectionOpen && !isOnMarket) {
-            // This is the Robot instrument selector path - keep Robot open
             if (panels.robot) {
               panels.robot.classList.remove('hidden');
               if (buttons.robot) buttons.robot.classList.add('active');
               if (chartOverlay) chartOverlay.classList.add('active');
             }
           } else {
-            // User came from Market (root) - stay on Market            // Close any open panels and return to market view
             closeAllPanels();
             if (buttons.market) buttons.market.classList.add('active');
             if (chartOverlay) chartOverlay.classList.remove('active');
             
-            // Update history state to reflect Market
             currentPanelStack = [];
             history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
             savePanelState(ROOT_PANEL, []);
@@ -8302,7 +7935,6 @@
           }
           subscribeToSymbol(asset);
         });
-        // 🔥 MARKET INSTRUMENT NAVIGATION FIX END
         container.appendChild(div);
       });
     }
@@ -8438,13 +8070,8 @@
     // ====================================================================
     // RISK PERSISTENCE FIX START
     // ====================================================================
-    // Save risk management values to localStorage when they change
-    // ====================================================================
     function getRiskManagementKey() {
       if (!currentUser || !currentUser.uid) {
-        // Fallback to a generic key if user is not available
-        // This should rarely happen since risk inputs are in Robot Settings
-        // which is only accessible after login
         return 'olymmatix_risk_management_guest';
       }
       return `olymmatix_risk_management_${currentUser.uid}`;
@@ -8455,11 +8082,9 @@
       if (!key) return;
       
       try {
-        // Extract numeric values from the input fields
         const stopLossVal = parseFloat(riskStopLossInput.value.replace(/[^0-9.]/g, ''));
         const takeProfitVal = parseFloat(riskTakeProfitInput.value.replace(/[^0-9.]/g, ''));
         
-        // Only save if values are valid positive numbers
         const data = {};
         if (!isNaN(stopLossVal) && stopLossVal > 0) {
           data.stopLoss = stopLossVal;
@@ -8491,13 +8116,11 @@
         const data = JSON.parse(stored);
         if (!data || typeof data !== 'object') return;
         
-        // Restore Stop Loss
         if (typeof data.stopLoss === 'number' && data.stopLoss > 0) {
           riskStopLossInput.value = `$${data.stopLoss.toFixed(2)}`;
           console.log('[Risk Persist] Restored Stop Loss:', data.stopLoss);
         }
         
-        // Restore Take Profit
         if (typeof data.takeProfit === 'number' && data.takeProfit > 0) {
           riskTakeProfitInput.value = `$${data.takeProfit.toFixed(2)}`;
           console.log('[Risk Persist] Restored Take Profit:', data.takeProfit);
@@ -8517,7 +8140,6 @@
       } else {
         this.value = '$' + parseFloat(val).toFixed(2);
       }
-      // RISK PERSISTENCE FIX: Save the normalized value
       saveRiskManagementValues();
     });
     riskTakeProfitInput.addEventListener('change', function() {
@@ -8527,7 +8149,6 @@
       } else {
         this.value = '$' + parseFloat(val).toFixed(2);
       }
-      // RISK PERSISTENCE FIX: Save the normalized value
       saveRiskManagementValues();
     });
 
@@ -8593,14 +8214,12 @@
     // DEPOSIT - ORIGINAL WORKING VERSION WITH CUSTOM AMOUNT FIX
     // =============================================
     let selectedKesValue = 6750;
-    let selectedUsdValue = 50; // Default to $50
+    let selectedUsdValue = 50;
 
     // DEPOSIT LIVE BALANCE FIX START
-    // Dedicated function to synchronize the Deposit UI with the authoritative accountBalances state.
-    let selectedDepositAccount = 'real-usd'; // 'real-usd' or 'real-usdt'
+    let selectedDepositAccount = 'real-usd';
 
     function updateDepositAccountUI() {
-      // Update the balances in the account choice cards
       const usdBalanceDisplay = document.getElementById('depositUsdBalanceDisplay');
       const usdtBalanceDisplay = document.getElementById('depositUsdtBalanceDisplay');
       if (usdBalanceDisplay) {
@@ -8610,7 +8229,6 @@
         usdtBalanceDisplay.textContent = `USDT ${(accountBalances['real-usdt'] || 0).toFixed(2)}`;
       }
 
-      // Update the selected account display in the deposit form
       const isUsd = selectedDepositAccount === 'real-usd';
       const accountName = isUsd ? 'USD Account' : 'USDT Account';
       const currency = isUsd ? 'USD' : 'USDT';
@@ -8630,12 +8248,10 @@
         accountIcon.innerHTML = `<img src="${iconSrc}" alt="${accountName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
       }
 
-      // Update deposit amount display if it shows the old currency
       const amountDisplay = document.getElementById('depositAmountDisplay');
       if (amountDisplay) {
         const currentText = amountDisplay.textContent;
         if (currentText.includes('KES') || currentText.includes('USD') || currentText.includes('USDT')) {
-          // If it's a crypto method (non-Mpesa), show the amount in the account's currency
           const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
           if (cryptoMethods.includes(selectedPaymentMethodForDeposit)) {
             amountDisplay.textContent = `${currency} ${selectedUsdValue.toLocaleString()}`;
@@ -8647,7 +8263,6 @@
         }
       }
 
-      // Update the account choice cards highlight
       const accOptions = document.querySelectorAll('.deposit-acc-option');
       accOptions.forEach(opt => {
         const key = opt.getAttribute('data-account-key');
@@ -8665,15 +8280,11 @@
       const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
       const isCrypto = cryptoMethods.includes(selectedPaymentMethodForDeposit);
 
-      // Determine default account type based on the selected payment method.
       let defaultAccountType = isCrypto ? 'real-usdt' : 'real-usd';
-      // Ensure the selected deposit account is updated.
       selectedDepositAccount = defaultAccountType;
       
-      // DEPOSIT LIVE BALANCE FIX: Call the dedicated UI sync function.
       updateDepositAccountUI();
       
-      // Also update the amount display if needed
       const amountDisplay = document.getElementById('depositAmountDisplay');
       if (amountDisplay) {
         if (isCrypto) {
@@ -8696,7 +8307,6 @@
     }
 
     // CUSTOM DEPOSIT AMOUNT FIX START
-    // Update the amount state and UI based on the current input value
     function updateSelectedAmountFromInput() {
       const customInput = document.getElementById('customKesInput');
       if (!customInput) return;
@@ -8710,7 +8320,6 @@
         selectedUsdValue = val;
       }
       
-      // Update preset button visual states based on current value
       const presetBtns = document.querySelectorAll('.mpesa-preset-btn');
       presetBtns.forEach(btn => {
         const btnVal = parseFloat(btn.getAttribute('data-amount'));
@@ -8733,7 +8342,6 @@
       const recLabel = document.getElementById('depositAmountRecLabel');
       const grid = document.getElementById('presetAmountsGrid');
 
-      // Ensure we have the current minimum from Firebase.
       const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
       const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
 
@@ -8746,13 +8354,10 @@
           customInput.value = selectedKesValue; 
           customInput.min = minKes; 
         }
-        // RECOMMENDATION TEXT UPDATED FOR M-PESA
         if (recLabel) recLabel.textContent = 'Recommended deposit for the robot is at least 50 USD';
         if (grid) {
-          // Generate preset amounts based on minDeposit and maxDeposit
           const base = minDeposit;
           const options = [base, base * 2, base * 5, base * 10, base * 20, base * 50, base * 100, base * 500];
-          // Filter options that are <= maxDeposit (converted to KES)
           const maxKes = maxDeposit * USD_TO_KES;
           grid.innerHTML = options
             .filter(amount => amount * USD_TO_KES <= maxKes)
@@ -8775,7 +8380,6 @@
           customInput.min = minDeposit; 
           customInput.max = maxDeposit;
         }
-        // RECOMMENDATION TEXT UPDATED FOR OTHER PAYMENT METHODS (USDT)
         if (recLabel) recLabel.textContent = 'Recommended deposit for the robot is at least 50 USDT';
         if (grid) {
           const base = minDeposit;
@@ -8795,25 +8399,21 @@
       const kesPresetBtns = document.querySelectorAll('.mpesa-preset-btn');
       const customKesInput = document.getElementById('customKesInput');
       kesPresetBtns.forEach(btn => {
-        // Remove existing listeners to avoid duplication
         btn.removeEventListener('click', btn._presetClickHandler);
         btn._presetClickHandler = function(e) {
           e.stopPropagation();
           const val = parseInt(this.getAttribute('data-amount'), 10);
           
-          // Update the selected amount value
           if (currentSelectedMethod === 'Mpesa') {
             selectedKesValue = val;
           } else {
             selectedUsdValue = val;
           }
           
-          // Update the input field to match
           if (customKesInput) {
             customKesInput.value = val;
           }
           
-          // Update visual state of preset buttons
           kesPresetBtns.forEach(b => {
             b.classList.remove('active');
             b.style.border = '1px solid var(--border-light)';
@@ -8826,21 +8426,17 @@
         btn.addEventListener('click', btn._presetClickHandler);
       });
       
-      // CUSTOM DEPOSIT AMOUNT FIX START - Set up custom input listener
       if (customKesInput) {
-        // Remove existing listener to avoid duplication
         customKesInput.removeEventListener('input', customKesInput._inputHandler);
         customKesInput._inputHandler = function() {
           const val = parseFloat(this.value);
           if (!isNaN(val) && val > 0) {
-            // Update the selected amount
             if (currentSelectedMethod === 'Mpesa') {
               selectedKesValue = val;
             } else {
               selectedUsdValue = val;
             }
             
-            // Update preset button visual states
             const presetBtns = document.querySelectorAll('.mpesa-preset-btn');
             let matchedPreset = false;
             presetBtns.forEach(b => {
@@ -8860,7 +8456,6 @@
         };
         customKesInput.addEventListener('input', customKesInput._inputHandler);
       }
-      // CUSTOM DEPOSIT AMOUNT FIX END
     }
     // CUSTOM DEPOSIT AMOUNT FIX END
 
@@ -8869,14 +8464,12 @@
         e.stopPropagation();
         selectedPaymentMethodForDeposit = 'Mpesa';
         currentSelectedMethod = 'Mpesa';
-        // DEPOSIT LIVE BALANCE FIX: Set default account and update UI
         selectedDepositAccount = 'real-usd';
         setDefaultDepositAccount();
         updatePaymentMethodIcon('Mpesa', 'mpesa.png');
         openPanel('accountDepositForm', 'account');
         savePanelState('accountDepositForm', ['accountDepositForm']);
         resetStkStatus();
-        // DEPOSIT LIVE BALANCE FIX: Ensure UI is synchronized
         updateDepositAccountUI();
       });
     }
@@ -8887,21 +8480,18 @@
       proceedToStep2Btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         
-        // Check if user has a successful deposit
         const hasSuccessfulDeposit = transactions.some(tx => 
           tx.type === 'deposit' && 
           (tx.status === 'completed' || tx.status === 'approved')
         );
         
         if (hasSuccessfulDeposit) {
-          // User has a successful deposit, activate them and open withdrawal
           try {
             await update(ref(db, `users/${currentUser.uid}`), {
               accountActivated: true
             });
             isAccountActivated = true;
             
-            // Show success notification
             const notif = document.createElement('div');
             notif.className = 'trade-notification';
             notif.style.borderColor = 'var(--success)';
@@ -8920,9 +8510,7 @@
               }
             }, 4000);
             
-            // Close activation panel and open withdrawal
             if (panels.accountActivation) panels.accountActivation.classList.add('hidden');
-            // Re-initialize withdrawal state and open panel
             selectedWithdrawMethod = 'Mpesa';
             selectedWithdrawMethodLogo = 'mpesa.png';
             const methodIcon = document.getElementById('withdrawMethodIcon');
@@ -8967,7 +8555,6 @@
             }, 4000);
           }
         } else {
-          // No successful deposit, proceed to deposit form
           if (panels.accountActivation) panels.accountActivation.classList.add('hidden');
           selectedPaymentMethodForDeposit = 'Mpesa';
           currentSelectedMethod = 'Mpesa';
@@ -8988,10 +8575,8 @@
     if (depositAmountFieldTrigger) {
       depositAmountFieldTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Ensure we have the latest min before opening.
         const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
         const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
-        // If selectedKesValue is below min, adjust it.
         const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
         if (currentSelectedMethod === 'Mpesa' && selectedKesValue < minKes) selectedKesValue = minKes;
         if (currentSelectedMethod !== 'Mpesa' && selectedUsdValue < minDeposit) selectedUsdValue = minDeposit;
@@ -9009,24 +8594,20 @@
       confirmKesAmountBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
-        // Read the current value from the input field - this is the source of truth
         const customInput = document.getElementById('customKesInput');
         let currentVal = customInput ? parseFloat(customInput.value) : 0;
         
-        // Get the current minimum from Firebase
         const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
         const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
         const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
         const maxKes = maxDeposit * USD_TO_KES;
         
         if (isNaN(currentVal) || currentVal <= 0) {
-          // Fallback to the stored values if input is invalid
           currentVal = currentSelectedMethod === 'Mpesa' ? selectedKesValue : selectedUsdValue;
           if (customInput) customInput.value = currentVal;
         }
         
         if (currentSelectedMethod === 'Mpesa') {
-          // Update selectedKesValue from current input value
           selectedKesValue = Math.round(currentVal);
           
           if (selectedKesValue < minKes) {
@@ -9086,7 +8667,6 @@
           savePanelState('mpesaStk', ['mpesaStk']);
           resetStkStatus();
         } else {
-          // Update selectedUsdValue from current input value
           selectedUsdValue = Math.round(currentVal);
           
           const selectedAccName = document.getElementById('depositSelectedAccountName').textContent;
@@ -9149,7 +8729,6 @@
     if (depositAccountSelectorTrigger) {
       depositAccountSelectorTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        // DEPOSIT LIVE BALANCE FIX: Ensure the account choice panel shows current balances.
         updateDepositAccountUI();
         if (panels.accountDepositForm) panels.accountDepositForm.classList.add('hidden');
         if (panels.depositAccountChoice) panels.depositAccountChoice.classList.remove('hidden');
@@ -9178,7 +8757,6 @@
         selectedPaymentMethodForDeposit = methodName;
         currentSelectedMethod = methodName;
         updatePaymentMethodIcon(methodName, logoFile);
-        // DEPOSIT LIVE BALANCE FIX: Reset selected account based on payment method
         const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
         selectedDepositAccount = cryptoMethods.includes(methodName) ? 'real-usdt' : 'real-usd';
         setDefaultDepositAccount();
@@ -9194,7 +8772,6 @@
         if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
         savePanelState('accountDepositForm', ['accountDepositForm']);
         resetStkStatus();
-        // DEPOSIT LIVE BALANCE FIX: Update UI after payment method change
         updateDepositAccountUI();
       });
     });
@@ -9204,20 +8781,16 @@
     depositAccOptions.forEach(opt => {
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        const accKey = opt.getAttribute('data-account-key'); // 'real-usd' or 'real-usdt'
+        const accKey = opt.getAttribute('data-account-key');
         if (accKey && (accKey === 'real-usd' || accKey === 'real-usdt')) {
-          // Set the selected deposit account
           selectedDepositAccount = accKey;
-          // Update the UI using the dedicated synchronizer
           updateDepositAccountUI();
           
-          // Close the account choice panel and return to deposit form
           if (panels.depositAccountChoice) panels.depositAccountChoice.classList.add('hidden');
           if (panels.accountDepositForm) panels.accountDepositForm.classList.remove('hidden');
           if (chartOverlay) chartOverlay.classList.add('active');
           savePanelState('accountDepositForm', ['accountDepositForm']);
           
-          // Update the account balance display in the deposit form
           const isUsd = selectedDepositAccount === 'real-usd';
           const currency = isUsd ? 'USD' : 'USDT';
           const balance = accountBalances[selectedDepositAccount] || 0;
@@ -9411,35 +8984,15 @@
     // ====================================================================
     // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION - SURGICAL PATCH
     // ====================================================================
-    // ONE USER ACTION = ONE CRYPTO DEPOSIT TRANSACTION RECORD
-    //
-    // This patch adds a submission-in-progress lock at the JavaScript
-    // handler level, plus a pending crypto deposit check before the
-    // Firebase write. It ensures that even if the submit handler is
-    // invoked multiple times rapidly (e.g., double-click, duplicate
-    // event registration, or any other cause), only ONE pending
-    // crypto deposit record is created.
-    //
-    // The lock is released on both success and failure. It is scoped
-    // to the current user and the current submission only.
-    // ====================================================================
     let cryptoDepositSubmissionInProgress = false;
 
-    // Helper: Check if the current user already has a pending crypto deposit.
-    // This uses the in-memory `transactions` array which is kept in sync
-    // by the real-time Firebase transaction listener.
-    // Returns true if a pending crypto deposit exists.
     function hasPendingCryptoDeposit() {
       if (!Array.isArray(transactions) || transactions.length === 0) return false;
       const cryptoMethods = ['Binance', 'Bybit', 'OKX'];
       return transactions.some(tx => {
-        // Must be a deposit
         if (tx.type !== 'deposit') return false;
-        // Must be a crypto payment method
         if (!tx.paymentMethod || !cryptoMethods.includes(tx.paymentMethod)) return false;
-        // Normalize status safely and case-insensitively
         const status = String(tx.status || '').toLowerCase().trim();
-        // Pending statuses include: pending, pending_approval, pending approval
         const isPending = status === 'pending' ||
                           status === 'pending_approval' ||
                           status === 'pending approval';
@@ -9455,26 +9008,11 @@
       submitUsdtBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
 
-        // ================================================================
-        // SURGICAL PATCH: SUBMISSION-IN-PROGRESS LOCK
-        // ================================================================
-        // If a crypto deposit submission is already in progress, stop
-        // immediately. This is the primary protection against duplicate
-        // Firebase writes from rapid double-clicks or any other cause.
-        // The lock is at the JavaScript handler level, not just the button.
-        // ================================================================
         if (cryptoDepositSubmissionInProgress) {
           console.log('[Crypto Deposit] Submission already in progress, ignoring duplicate invocation.');
           return;
         }
 
-        // ================================================================
-        // SURGICAL PATCH: CHECK FOR EXISTING PENDING CRYPTO DEPOSIT
-        // ================================================================
-        // Before doing anything else, check if the user already has a
-        // pending crypto deposit. If so, block the new submission.
-        // This preserves the existing one-pending-crypto-deposit rule.
-        // ================================================================
         if (hasPendingCryptoDeposit()) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
@@ -9496,14 +9034,12 @@
           return;
         }
 
-        // Read the form values
         const amount = parseFloat(document.getElementById('usdtAmountInput').value);
         const hash = document.getElementById('usdtHashInput').value;
         const note = document.getElementById('usdtNoteInput').value;
         const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
         const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
 
-        // Validate amount
         if (!amount || amount < minDeposit) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
@@ -9545,18 +9081,9 @@
           return;
         }
 
-        // ================================================================
-        // SURGICAL PATCH: ACQUIRE THE SUBMISSION LOCK
-        // ================================================================
-        // All validation has passed. We are now going to create exactly
-        // one Firebase transaction record. Acquire the lock so that any
-        // additional invocation of this handler is immediately rejected
-        // until the operation completes or fails.
-        // ================================================================
         cryptoDepositSubmissionInProgress = true;
 
         try {
-          // Create exactly ONE transaction record.
           await saveTransactionToFirebase({
             type: 'deposit',
             amount: amount,
@@ -9614,12 +9141,6 @@
             }
           }, 4000);
         } finally {
-          // ================================================================
-          // SURGICAL PATCH: RELEASE THE SUBMISSION LOCK
-          // ================================================================
-          // Release the lock on BOTH success and failure so that future
-          // deposits are not permanently disabled.
-          // ================================================================
           cryptoDepositSubmissionInProgress = false;
         }
       });
@@ -9630,16 +9151,13 @@
     // =============================================
     let selectedWithdrawMethod = 'Mpesa';
     let selectedWithdrawMethodLogo = 'mpesa.png';
-    // WITHDRAW ACCOUNT SELECTION PATCH START – new state variable
-    let selectedWithdrawAccount = 'real-usd'; // default to Real USD
-    // WITHDRAW ACCOUNT SELECTION PATCH END
+    let selectedWithdrawAccount = 'real-usd';
 
     // WITHDRAWAL ACTIVATION FINAL FIX START - Refactored withdrawal button handler
     if (buttons.accMenuWithdraw) {
       buttons.accMenuWithdraw.addEventListener('click', async (e) => {
         e.stopPropagation();
         
-        // Check if user is authenticated
         if (!currentUser) {
           const notif = document.createElement('div');
           notif.className = 'trade-notification';
@@ -9661,45 +9179,37 @@
           return;
         }
         
-        // Check activation status
         const isActivated = isAccountActivated === true;
         
         if (!isActivated) {
-          // Check if there is a successful deposit in the transaction history
           const hasSuccessfulDeposit = transactions.some(tx => 
             tx.type === 'deposit' && 
             (tx.status === 'completed' || tx.status === 'approved')
           );
           
           if (hasSuccessfulDeposit) {
-            // User has a successful deposit but is not activated - update activation and proceed
             try {
               await update(ref(db, `users/${currentUser.uid}`), {
                 accountActivated: true
               });
               isAccountActivated = true;
               console.log('[Activation] Auto-activated user based on successful deposit');
-              // Proceed to withdrawal
               openWithdrawalPanel();
             } catch (error) {
               console.error('[Activation] Error updating activation status:', error);
-              // Show error but still allow withdrawal? Better to show activation panel as fallback
               openPanel('accountActivation', 'account');
               savePanelState('accountActivation', ['accountActivation']);
             }
           } else {
-            // No successful deposit - show activation panel
             openPanel('accountActivation', 'account');
             savePanelState('accountActivation', ['accountActivation']);
           }
         } else {
-          // User is activated - proceed to withdrawal
           openWithdrawalPanel();
         }
       });
     }
     
-    // Helper function to open withdrawal panel with all initialization
     function openWithdrawalPanel() {
       selectedWithdrawMethod = 'Mpesa';
       selectedWithdrawMethodLogo = 'mpesa.png';
@@ -9729,16 +9239,11 @@
 
     const withdrawPaymentMethodTrigger = document.getElementById('withdrawPaymentMethodTrigger');
     if (withdrawPaymentMethodTrigger) {
-      // PAYMENT METHOD PANEL BUG FIX START
-      // The previous logic manually hid the withdrawal panel and showed the payment method panel,
-      // causing a mismatch with the centralized panel stack and history. Now we use the existing
-      // openPanel() system to ensure proper state/history synchronization.
       withdrawPaymentMethodTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
         openPanel('withdrawPaymentMethod', 'account');
         savePanelState('withdrawPaymentMethod', ['withdrawPaymentMethod']);
       });
-      // PAYMENT METHOD PANEL BUG FIX END
     }
 
     const withdrawMethodOptions = document.querySelectorAll('.withdraw-method-option');
@@ -9866,21 +9371,17 @@
       });
     });
 
-    // WITHDRAW ACCOUNT SELECTION PATCH START – click handler for account selector
     const withdrawAccountTrigger = document.getElementById('withdrawAccountSelectorTrigger');
     if (withdrawAccountTrigger) {
       withdrawAccountTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Open the account choice panel
         if (panels.withdrawal) panels.withdrawal.classList.add('hidden');
         if (panels.withdrawAccountChoice) panels.withdrawAccountChoice.classList.remove('hidden');
         if (chartOverlay) chartOverlay.classList.add('active');
         savePanelState('withdrawAccountChoice', ['withdrawAccountChoice']);
       });
     }
-    // WITHDRAW ACCOUNT SELECTION PATCH END
 
-    // WITHDRAW ACCOUNT SELECTION PATCH START – account option click handlers
     const withdrawAccOptions = document.querySelectorAll('.withdraw-acc-option');
     withdrawAccOptions.forEach(opt => {
       opt.addEventListener('click', (e) => {
@@ -9889,13 +9390,11 @@
         if (accKey && (accKey === 'real-usd' || accKey === 'real-usdt')) {
           selectedWithdrawAccount = accKey;
           updateWithdrawAccountUI();
-          // Close the account choice panel and return to withdrawal
           if (panels.withdrawAccountChoice) panels.withdrawAccountChoice.classList.add('hidden');
           if (panels.withdrawal) panels.withdrawal.classList.remove('hidden');
           if (chartOverlay) chartOverlay.classList.add('active');
           savePanelState('withdrawal', ['withdrawal']);
 
-          // Update the visual highlight on the options
           withdrawAccOptions.forEach(o => {
             o.style.border = '1px solid var(--border-light)';
           });
@@ -9903,16 +9402,12 @@
         }
       });
     });
-    // WITHDRAW ACCOUNT SELECTION PATCH END
 
-    // WITHDRAW ACCOUNT SELECTION PATCH START – ensure the default account is highlighted
     function initWithdrawAccountUI() {
-      // Set default account if not set
       if (!selectedWithdrawAccount) {
         selectedWithdrawAccount = 'real-usd';
       }
       updateWithdrawAccountUI();
-      // Highlight the correct option in the choice panel
       const options = document.querySelectorAll('.withdraw-acc-option');
       options.forEach(opt => {
         const accKey = opt.getAttribute('data-withdraw-account');
@@ -9923,9 +9418,7 @@
         }
       });
     }
-    // WITHDRAW ACCOUNT SELECTION PATCH END
 
-    // WITHDRAW ACCOUNT SELECTION PATCH START – UI update function
     function updateWithdrawAccountUI() {
       const isUsd = selectedWithdrawAccount === 'real-usd';
       const accountName = isUsd ? 'USD Account' : 'USDT Account';
@@ -9949,7 +9442,6 @@
         amountInput.step = isUsd ? '1' : '1';
       }
 
-      // Update withdrawal account choice balances
       const usdBalanceDisplay = document.getElementById('withdrawUsdBalanceDisplay');
       const usdtBalanceDisplay = document.getElementById('withdrawUsdtBalanceDisplay');
       if (usdBalanceDisplay) {
@@ -9959,7 +9451,6 @@
         usdtBalanceDisplay.textContent = `USDT ${(accountBalances['real-usdt'] || 0).toFixed(2)}`;
       }
     }
-    // WITHDRAW ACCOUNT SELECTION PATCH END
 
     function updateWithdrawalMaxUI(maxWithdrawal) {
       const amountInput = document.getElementById('withdrawAmountInput');
@@ -10019,11 +9510,9 @@
           return;
         }
 
-        // WITHDRAW ACCOUNT SELECTION PATCH START – use selectedWithdrawAccount instead of hardcoded 'real-usd'
         const balance = accountBalances[selectedWithdrawAccount] || 0;
         const isUsd = selectedWithdrawAccount === 'real-usd';
         const currency = isUsd ? 'USD' : 'USDT';
-        // WITHDRAW ACCOUNT SELECTION PATCH END
 
         if (amount > balance) {
           const notif = document.createElement('div');
@@ -10096,19 +9585,13 @@
           address = addrInput.value.trim();
         }
 
-        // WITHDRAW ACCOUNT SELECTION PATCH START – deduct from selected account
         accountBalances[selectedWithdrawAccount] -= amount;
-        // WITHDRAW ACCOUNT SELECTION PATCH END
 
         await saveBalancesToFirebase();
         updateAccountUI(currentAccountType);
 
-        // WITHDRAW ACCOUNT SELECTION PATCH START – save selected account type
         const accountTypeForRecord = selectedWithdrawAccount;
-        // WITHDRAW ACCOUNT SELECTION PATCH END
 
-        // WITHDRAWAL TRANSACTION SYNC FIX START – Save withdrawal with ID and link to transaction
-        // First save the withdrawal and get its ID
         const withdrawalId = await saveWithdrawalToFirebase({
           amount: amount,
           currency: currency,
@@ -10118,7 +9601,6 @@
           status: 'pending'
         });
         
-        // Save transaction with withdrawalId link
         await saveTransactionToFirebase({
           type: 'withdrawal',
           amount: amount,
@@ -10127,9 +9609,8 @@
           method: selectedWithdrawMethod,
           address: address,
           status: 'pending',
-          withdrawalId: withdrawalId // Link to the withdrawal record
+          withdrawalId: withdrawalId
         });
-        // WITHDRAWAL TRANSACTION SYNC FIX END
 
         const notif = document.createElement('div');
         notif.className = 'trade-notification';
@@ -10445,11 +9926,6 @@
     }
 
     // =============================================
-    // REFERRAL COPY
-    // =============================================
-    // The copyReferralBtn is now handled in the referral link fix section above
-
-    // =============================================
     // COPY TRADING ID COPY
     // =============================================
     const copyTradingIdBtn = document.getElementById('copyTradingIdBtn');
@@ -10610,7 +10086,6 @@
     }
 
     // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
-    // Track processed transaction IDs to prevent double crediting
     let processedMpesaTransactions = new Set();
 
     const submitMpesaStkBtn = document.getElementById('submitMpesaStkBtn');
@@ -10618,7 +10093,6 @@
       submitMpesaStkBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
 
-        // Guard against double-click submission
         if (submitMpesaStkBtn.disabled) {
             console.log('[MPESA] Submission already in progress, ignoring double-click.');
             return;
@@ -10654,7 +10128,6 @@
         const amountText = amountDisplay.textContent.replace('KES ', '').replace(/,/g, '').trim();
         const amount = parseFloat(amountText) || 0;
 
-        // Use dynamic minimum deposit from Firebase
         const minDeposit = (window.minimumDeposit !== undefined && window.minimumDeposit !== null) ? window.minimumDeposit : 5;
         const maxDeposit = (window.maximumDeposit !== undefined && window.maximumDeposit !== null) ? window.maximumDeposit : 10000;
         const minKes = Math.max(Math.ceil(minDeposit * USD_TO_KES), 1);
@@ -10701,7 +10174,6 @@
           return;
         }
 
-        // Disable button to prevent double submission
         submitMpesaStkBtn.disabled = true;
         submitMpesaStkBtn.textContent = 'Sending...';
         showStkStatus('pending', 'Sending M-PESA prompt...', 'Please check your phone for the STK push', 'Sending request...', '');
@@ -10789,12 +10261,9 @@
             const kesAmount = parseFloat(amountText) || 0;
             const usdAmount = kesAmount / USD_TO_KES;
 
-            // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START
-            // Check if this transaction has already been processed
             const txKey = `mpesa_${checkoutRequestId}`;
             if (processedMpesaTransactions.has(txKey)) {
               console.log(`[MPESA] Transaction ${checkoutRequestId} already processed, skipping credit.`);
-              // Update UI to show already processed
               showStkStatus(
                 'success',
                 'Payment Already Processed',
@@ -10810,11 +10279,8 @@
               return;
             }
 
-            // Mark as processing immediately to prevent race conditions
             processedMpesaTransactions.add(txKey);
 
-            // First, check if this transaction is already credited in the database
-            // by searching for an existing transaction with this checkoutRequestId
             const existingTx = transactions.find(tx => 
               tx.checkoutRequestId === checkoutRequestId && 
               tx.type === 'deposit' &&
@@ -10838,9 +10304,7 @@
               return;
             }
 
-            // Check if we already have a pending transaction for this checkoutRequestId
             if (existingTx && existingTx.credited !== true) {
-              // Update the existing transaction to completed and mark as credited
               const txRef = ref(db, `users/${currentUser.uid}/transactions/${existingTx.id}`);
               await update(txRef, {
                 status: 'completed',
@@ -10849,20 +10313,17 @@
                 providerReference: data.providerReference || '',
                 completedAt: Date.now()
               });
-              // Update in-memory
               existingTx.status = 'completed';
               existingTx.credited = true;
               existingTx.creditedAt = Date.now();
               existingTx.providerReference = data.providerReference || '';
 
-              // Update balance
               accountBalances['real-usd'] = (accountBalances['real-usd'] || 0) + usdAmount;
               await saveBalancesToFirebase();
               updateAccountUI(currentAccountType);
 
               console.log(`[MPESA] Updated existing transaction ${existingTx.id} to credited.`);
             } else {
-              // Create new transaction and credit
               await updateAccountBalance('real-usd', usdAmount, true);
 
               await saveTransactionToFirebase({
@@ -10881,7 +10342,6 @@
               });
             }
 
-            // Update UI
             showStkStatus(
               'success',
               'Payment Successful!',
@@ -12062,11 +11522,9 @@
           trade.closePrice = trade.entryPrice + (isWin ? 0.001 : -0.001);
           await saveBalancesToFirebase();
           updateAccountUI(currentAccountType);
-          // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
           if (!closedTrades.some(t => t.id === trade.id)) {
             closedTrades.push({ ...trade });
           }
-          // TRADE EXPIRY PERSISTENCE FIX END
           await saveTradeHistoryToFirebase(closedTrades);
           activeTrades.splice(i, 1);
           changed = true;
@@ -12131,19 +11589,6 @@
     // ====================================================================
     // BOT TRADE LIFECYCLE FIX START
     // ====================================================================
-    // The following additions make an already-open bot trade persist and
-    // settle independently of `botRunning` and `botActiveTrade`:
-    //
-    //  - Active bot trades are persisted to localStorage.
-    //  - On login/refresh, any persisted bot trade is restored into
-    //    `activeTrades`, so it continues toward its original expiryTime.
-    //  - If its expiryTime has already passed during refresh, it is
-    //    settled immediately using its already-stored result/profit.
-    //  - A standalone expiry monitor scans `activeTrades` for any
-    //    `isBot && status === 'running' && expiryTime <= Date.now()`
-    //    trade and settles it, regardless of botRunning / botActiveTrade.
-    // ====================================================================
-
     const BOT_ACTIVE_TRADE_KEY_PREFIX = 'olymmatix_active_bot_trade_';
 
     function getBotActiveTradeKey() {
@@ -12155,7 +11600,6 @@
       const key = getBotActiveTradeKey();
       if (!key) return;
       try {
-        // Persist only the currently running bot trade (if any).
         const running = activeTrades.find(t => t.isBot === true && t.status === 'running');
         if (running) {
           localStorage.setItem(key, JSON.stringify(running));
@@ -12188,23 +11632,17 @@
           localStorage.removeItem(key);
           return;
         }
-        // Avoid duplicating an already restored trade.
         if (activeTrades.some(t => t.id === trade.id)) {
           return;
         }
-        // Restore the trade into activeTrades.
         activeTrades.push(trade);
         botActiveTrade = trade;
         updateTradeDisplay();
         console.log('[Bot Lifecycle] Restored active bot trade from localStorage:', trade.id, 'expiryTime:', trade.expiryTime);
 
-        // If already expired, settle it immediately using its stored result/profit.
         if (trade.expiryTime <= Date.now()) {
           console.log('[Bot Lifecycle] Restored bot trade already expired, settling now.');
-          // We reuse closeBotTrade by ensuring botActiveTrade points to it.
           botActiveTrade = trade;
-          // Close regardless of botRunning. closeBotTrade already handles
-          // the "bot stopped" path (settle balance, do not touch session stats).
           closeBotTrade();
         }
       } catch (e) {
@@ -12212,14 +11650,11 @@
       }
     }
 
-    // Standalone expiry monitor for bot trades.
-    // Runs independently of botRunning and botActiveTrade.
     let botExpiryMonitorInterval = null;
 
     function ensureBotExpiryMonitorRunning() {
       if (botExpiryMonitorInterval) return;
       botExpiryMonitorInterval = setInterval(() => {
-        // Find any running bot trade whose expiry has passed.
         const now = Date.now();
         const expired = activeTrades.filter(t =>
           t.isBot === true &&
@@ -12228,17 +11663,12 @@
           t.expiryTime <= now
         );
         if (expired.length === 0) {
-          // Nothing to settle right now.
           return;
         }
-        // Settle each expired bot trade exactly once.
         expired.forEach(trade => {
-          // Point botActiveTrade at the trade so closeBotTrade operates on it.
-          // closeBotTrade is idempotent (checks status/guards) so this is safe.
           if (!botActiveTrade || botActiveTrade.id !== trade.id) {
             botActiveTrade = trade;
           }
-          // Only trigger close if not already in the middle of a close.
           if (!botClosingTrade) {
             closeBotTrade();
           }
@@ -12248,11 +11678,6 @@
     }
 
     function stopBotExpiryMonitorIfIdle() {
-      // The expiry monitor is intentionally allowed to remain running while
-      // any bot trade is active. It is cheap (single 1s interval) and it
-      // guarantees that a stopped bot's open trade still settles at expiry.
-      // We only stop it when there is no running bot trade AND no bot session
-      // is active, to avoid an orphan interval forever.
       const hasRunningBotTrade = activeTrades.some(t => t.isBot === true && t.status === 'running');
       if (!hasRunningBotTrade && !botRunning && botExpiryMonitorInterval) {
         clearInterval(botExpiryMonitorInterval);
@@ -12336,24 +11761,17 @@
       clearBotIntervals();
 
       botInterval = setInterval(() => {
-        // TRADE EXPIRY PERSISTENCE FIX START
-        // Even if the bot is stopped, an already-open bot trade must still
-        // be allowed to reach its expiry and be settled. We only CHECK for
-        // expiry here; we never open new trades when botRunning is false.
         if (botActiveTrade) {
           const now = Date.now();
           if (botActiveTrade.expiryTime <= now) {
             closeBotTrade();
           }
         }
-        // TRADE EXPIRY PERSISTENCE FIX END
       }, 1000);
 
       saveBotRunningState(true);
 
-      // BOT TRADE LIFECYCLE FIX START - ensure the independent expiry monitor is alive.
       ensureBotExpiryMonitorRunning();
-      // BOT TRADE LIFECYCLE FIX END
 
       setTimeout(() => {
         if (botRunning && !botActiveTrade) {
@@ -12368,22 +11786,11 @@
     function stopBotAndPersist(reason) {
       if (!botRunning) return;
       botRunning = false;
-      // ====================================================================
-      // BOT TRADE LIFECYCLE FIX START
-      // ====================================================================
-      // IMPORTANT: Do NOT clear the expiry monitor here if a running bot
-      // trade still exists. Stopping new trade generation must not stop
-      // expiry settlement of an already-open bot trade.
-      // ====================================================================
       if (botInterval) {
         clearInterval(botInterval);
         botInterval = null;
       }
-      // Keep the standalone expiry monitor alive while a bot trade is still open.
       ensureBotExpiryMonitorRunning();
-      // ====================================================================
-      // BOT TRADE LIFECYCLE FIX END
-      // ====================================================================
       if (signalIndicator) {
         signalIndicator.classList.remove('spinning');
         signalIndicator.style.borderColor = 'rgba(255, 255, 255, 0.2)';
@@ -12449,18 +11856,13 @@
         }
 
         if (botRunning) {
-          // USER EXPLICITLY STOPPING THE BOT
-          // This is the ONLY place where bot statistics are reset and cleared.
           stopBotAndPersist('user_stop');
-          // Reset in-memory counters
           botTradeCount = 0;
           botWinCount = 0;
           botLossCount = 0;
           botTotalProfit = 0;
           botCumulativeProfit = 0;
-          // Update the UI
           restoreBotStatsUI();
-          // Remove the user's persisted statistics from localStorage
           clearBotStatsFromLocalStorage();
           console.log('[Bot Stats] User stopped trading. Statistics reset and cleared.');
         } else {
@@ -12476,19 +11878,11 @@
       const shouldBeRunning = loadBotRunningState();
 
       if (!shouldBeRunning) {
-        // Bot is stopped. Do NOT load saved statistics.
-        // A manual stop clears the persisted statistics, and we must
-        // not resurrect them here.
         console.log('[Bot Restore] No running state found, bot remains stopped. Statistics not restored.');
-        // BOT TRADE LIFECYCLE FIX START
-        // Even if the bot is stopped, an already-open bot trade must still
-        // reach expiry and settle. Ensure the expiry monitor is alive.
         ensureBotExpiryMonitorRunning();
-        // BOT TRADE LIFECYCLE FIX END
         return;
       }
 
-      // Only restore statistics if the bot is actually going to run.
       const savedStats = loadBotStatsFromLocalStorage();
       if (savedStats) {
         botTradeCount = savedStats.tradeCount;
@@ -12527,26 +11921,18 @@
 
       if (botRunning) {
         console.log('[Bot Restore] Bot already running, no action needed.');
-        // BOT TRADE LIFECYCLE FIX START
         ensureBotExpiryMonitorRunning();
-        // BOT TRADE LIFECYCLE FIX END
         return;
       }
 
       clearBotIntervals();
 
-      // DO NOT zero the counters here - they were already restored from localStorage above.
-      // Only reset the transient bot session state.
       botActiveTrade = null;
       botOpeningTrade = false;
       botClosingTrade = false;
 
-      // BOT TRADE LIFECYCLE FIX START
-      // Restore any previously persisted active bot trade first.
-      // This is the same restoration used during login.
       restorePersistedActiveBotTrade();
       ensureBotExpiryMonitorRunning();
-      // BOT TRADE LIFECYCLE FIX END
 
       botRunning = true;
       startRobotBtn.textContent = 'Stop trading';
@@ -12693,10 +12079,8 @@
         activeTrades.push(trade);
         updateTradeDisplay();
 
-        // BOT TRADE LIFECYCLE FIX START - persist the active bot trade
         persistActiveBotTrade();
         ensureBotExpiryMonitorRunning();
-        // BOT TRADE LIFECYCLE FIX END
 
         if (signalTitle) {
           signalTitle.textContent = `Trade in progress... ${side}`;
@@ -12705,9 +12089,6 @@
           signalIndicator.classList.add('spinning');
         }
 
-        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH START =====
-        // Only create this notification if the trade is NOT from the bot.
-        // This is the only change: we check isBot and skip creating the global popup.
         if (!trade.isBot) {
           const sideColor = side === 'BUY' ? 'var(--success)' : 'var(--btn-danger)';
           const notif = document.createElement('div');
@@ -12730,7 +12111,6 @@
             }
           }, 4000);
         }
-        // ===== BOT GLOBAL NOTIFICATION SUPPRESSION PATCH END =====
 
         console.log(
           `[BOT] Trade opened: ${side} ${trade.symbol} @ ${entryPrice} | Amount: $${amount} | Duration: ${durationInSeconds}s | Account: ${botExecutionAccount} | WinRate: ${winRatePercent}%`
@@ -12758,11 +12138,6 @@
         const stake = trade.amount;
         let profit = 0;
 
-        // TRADE EXPIRY PERSISTENCE FIX START
-        // Only update the in-memory session statistics if the bot is still
-        // considered "running" for statistics purposes. If the user manually
-        // stopped the bot, the statistics were already reset, and we must not
-        // re-populate them from this late-closing trade.
         if (botRunning) {
           if (isWin) {
             profit = stake * 0.70;
@@ -12797,8 +12172,6 @@
 
           updateAccountUI(currentAccountType);
         } else {
-          // Bot was stopped while this trade was running.
-          // Settle the balance exactly once, but do NOT touch session statistics.
           if (isWin) {
             profit = stake * 0.70;
             accountBalances[botExecutionAccount] += stake + profit;
@@ -12819,26 +12192,18 @@
             `[BOT] Late-closed trade (bot was stopped): ${trade.side} ${trade.symbol} | Result: ${trade.result} | Profit: $${profit.toFixed(2)}`
           );
         }
-        // TRADE EXPIRY PERSISTENCE FIX END
 
         const idx = activeTrades.findIndex(t => t.id === trade.id);
         if (idx !== -1) activeTrades.splice(idx, 1);
-        // TRADE EXPIRY PERSISTENCE FIX START - Prevent duplicate history entries
         if (!closedTrades.some(t => t.id === trade.id)) {
           closedTrades.push({ ...trade });
         }
-        // TRADE EXPIRY PERSISTENCE FIX END
         await saveTradeHistoryToFirebase(closedTrades);
         updateTradeDisplay();
 
-        // BOT TRADE LIFECYCLE FIX START
-        // Remove the persisted active bot trade and update the monitor.
         clearPersistedActiveBotTrade();
         stopBotExpiryMonitorIfIdle();
-        // BOT TRADE LIFECYCLE FIX END
 
-        // Save bot statistics to localStorage after counters are updated,
-        // but only if the bot is still running.
         if (botRunning) {
           saveBotStatsToLocalStorage();
         }
@@ -12864,7 +12229,6 @@
           return;
         }
 
-        // Only open a new trade if the bot is still running.
         if (botRunning) {
           setTimeout(() => {
             if (botRunning && !botActiveTrade) {
@@ -12931,10 +12295,7 @@
     // DYNAMIC LIMITS UI UPDATE FUNCTIONS
     // =============================================
     function updateDepositMinUI(val) {
-      // Update any UI elements that display the deposit minimum
-      // For example, the KES deposit amount panel min label
       updateKesDepositMinLabel(val);
-      // Update any other deposit min UI elements if needed
     }
 
     function updateKesDepositMinLabel(val) {
@@ -12943,7 +12304,6 @@
         const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
         minLabel.textContent = `Deposit amount (Min KES ${minKes} = $${val})`;
       }
-      // Also update the custom input min if it's visible
       const customInput = document.getElementById('customKesInput');
       if (customInput) {
         const minKes = Math.max(Math.ceil(val * USD_TO_KES), 1);
@@ -12960,15 +12320,12 @@
       if (infoEl) {
         infoEl.textContent = `Minimum withdrawal: $${val}`;
       }
-      // Update the amount input min
       const amountInput = document.getElementById('withdrawAmountInput');
       if (amountInput) {
         amountInput.min = val;
-        // If current value is below min, update it
         const currentVal = parseFloat(amountInput.value);
         if (!isNaN(currentVal) && currentVal < val) {
           amountInput.value = val;
-          // Also update preset buttons visual state
           const presets = document.querySelectorAll('.withdraw-preset-btn');
           presets.forEach(btn => {
             const presetVal = parseFloat(btn.getAttribute('data-amount'));
@@ -12984,7 +12341,6 @@
           });
         }
       }
-      // Update the presets: ensure at least one preset matches the minimum
       const presets = document.querySelectorAll('.withdraw-preset-btn');
       let hasMatchingPreset = false;
       presets.forEach(btn => {
@@ -12994,7 +12350,6 @@
         }
       });
       if (!hasMatchingPreset) {
-        // Add a new preset for the minimum if it doesn't exist
         const container = document.querySelector('.withdraw-preset-btn').parentNode;
         if (container) {
           const newBtn = document.createElement('button');
@@ -13052,66 +12407,41 @@
     console.log('[Activation] Account activation system initialized. isAccountActivated:', isAccountActivated);
     console.log('[Activation] Withdrawal is gated by successful deposit history, not balance.');
     // WITHDRAWAL ACTIVATION FINAL FIX END
-    // REFERRAL COUNT FIX START - Log initialization
     console.log('[Referral Count] Referral count listener initialized. Count updates in real-time.');
-    // REFERRAL COUNT FIX END
-    // MARKET INSTRUMENT NAVIGATION FIX START - Log the fix
     console.log('[Market Instrument] Instrument selection now stays on Market when changing from Market view.');
     console.log('[Market Instrument] Robot Settings remain open only when accessed from Robot view.');
-    // MARKET INSTRUMENT NAVIGATION FIX END
-    // WITHDRAWAL TRANSACTION SYNC FIX START - Log the fix
     console.log('[Withdrawal Sync] Withdrawal status synchronization initialized.');
     console.log('[Withdrawal Sync] Transaction status auto-syncs with withdrawal status changes.');
     console.log('[Withdrawal Sync] Historical reconciliation runs on login to fix mismatched records.');
-    // WITHDRAWAL TRANSACTION SYNC FIX END
-    // CUSTOM DEPOSIT AMOUNT FIX START - Log the fix
     console.log('[Deposit Amount] Custom amount input now updates selected amount in real-time.');
     console.log('[Deposit Amount] Manual input overrides preset selection.');
-    // CUSTOM DEPOSIT AMOUNT FIX END
-    // M-PESA TRANSACTION MASKING FIX START - Log the fix
     console.log('[M-PESA Mask] M-PESA phone numbers masked in transaction history (712XXX678).');
-    // M-PESA TRANSACTION MASKING FIX END
-    // WITHDRAWAL AMOUNT COLOR FIX START - Log the fix
     console.log('[Withdrawal Color] Withdrawal amounts now display in green.');
-    // WITHDRAWAL AMOUNT COLOR FIX END
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION START - Log the fix
     console.log('[MPESA Idempotency] Double-credit protection enabled for M-PESA transactions.');
     console.log('[MPESA Idempotency] Transactions are tracked using checkoutRequestId.');
     console.log('[MPESA Idempotency] Race conditions prevented with processing state tracking.');
-    // MPESA IDEMPOTENCY / DOUBLE-CREDIT PROTECTION END
-    // DEPOSIT BACK NAVIGATION FIX - Log the fix
     console.log('[Deposit Back Nav] Deposit child panels now always return to Main Deposit.');
     console.log('[Deposit Back Nav] Account Selection → Back → Main Deposit');
     console.log('[Deposit Back Nav] Payment Method → Back → Main Deposit');
     console.log('[Deposit Back Nav] Deposit Amount → Back → Main Deposit');
-    // ROBOT SETTINGS EXECUTION ACCOUNT INLINE SELECTOR - Log
     console.log('[Robot Exec] Execution account inline selector restored. Selecting an account collapses the list and keeps Robot Settings open.');
-    // ROBOT SETTINGS EXECUTION ACCOUNT GUARD - Log
     console.log('[Robot Exec] General .acc-select-card handler now ignores cards inside #inlineExecutionAccounts.');
-    // PANEL PERSISTENCE FIX - Log
     console.log('[Panel Persist] Panel state is now preserved during authentication initialization.');
     console.log('[Panel Persist] Saved panel is NOT overwritten with Market during startup.');
     console.log('[Panel Persist] restorePanelAfterRefresh() will restore the exact panel after refresh.');
-    // RISK PERSISTENCE FIX - Log
     console.log('[Risk Persist] Risk management values (Stop Loss / Take Profit) now persist across refresh.');
     console.log('[Risk Persist] Values are stored per-user under olymmatix_risk_management_{uid}.');
-    // TRADE EXPIRY PERSISTENCE FIX START - Log
     console.log('[Trade Expiry] Expired bot trades now close even if the bot was stopped.');
     console.log('[Trade Expiry] Late-closed trades settle balances exactly once.');
     console.log('[Trade Expiry] History limit increased to 15. Firebase is the source of truth.');
     console.log('[Trade Expiry] Duplicate history entries prevented by trade.id check.');
-    // TRADE EXPIRY PERSISTENCE FIX END
-    // BOT TRADE LIFECYCLE FIX START - Log
     console.log('[Bot Lifecycle] Active bot trade now persists across refresh via localStorage.');
     console.log('[Bot Lifecycle] Standalone expiry monitor settles running bot trades independent of botRunning.');
     console.log('[Bot Lifecycle] Stopping the bot no longer cancels an already-open bot trade.');
-    // BOT TRADE LIFECYCLE FIX END
-
-    // ============================================================
-    // SELECTED ACCOUNT PERSISTENCE - SAVE AFTER LOGIN
-    // ============================================================
-    // This is handled in the account selection card click handler.
-    // No additional code needed here.
+    // STARTUP SYNCHRONIZATION PATCH - Log
+    console.log('[Startup Sync] The existing full-page loader now remains visible until ALL startup restoration is complete.');
+    console.log('[Startup Sync] startupReady flag gates hideFullPageLoader().');
+    console.log('[Startup Sync] No intermediate account state (Demo/null) is exposed before the saved account is resolved.');
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
@@ -13121,42 +12451,41 @@
     // FIREBASE BALANCE AUTHORITY - LOADER CONTROL
     // ============================================================
     // The loader is shown by default via CSS. It must only be hidden
-    // after Firebase has returned the initial balance snapshot for the
-    // authenticated user. This prevents any stale/local balance from
-    // flashing on screen before Firebase loads.
+    // after ALL startup restoration work has completed, as indicated
+    // by the startupReady flag.
     //
-    // A polling interval checks whether balancesLoadedFromFirebase is
-    // true. Once it is, the loader is hidden. This is NOT a forced
-    // timeout: the loader hides because the required Firebase balance
-    // initialization has completed, not because of an arbitrary delay.
+    // This polling interval checks whether startupReady is true.
+    // Once it is, the loader is hidden. This is NOT a forced timeout:
+    // the loader hides because the required startup initialization
+    // and restoration has actually completed, not because of an
+    // arbitrary delay.
     //
-    // Safety: if Firebase never returns a balance (e.g., network error),
-    // the error handler in startBalanceListener() sets the flag to true
-    // and uses safe defaults, allowing the loader to hide.
+    // Safety: if for any reason startupReady is never set (e.g., an
+    // unexpected exception), the maxChecks guard ensures the user is
+    // not left staring at a spinner forever.
     // ============================================================
-    (function waitForFirebaseBalances() {
+    (function waitForStartupReady() {
       let checks = 0;
       const maxChecks = 300; // 30 seconds at 100ms intervals (safety fallback)
       const interval = setInterval(() => {
         checks++;
-        // Only hide the loader if we have a current user AND Firebase
-        // has returned the balance snapshot for that user.
-        if (currentUser && balancesLoadedFromFirebase) {
+        // Only hide the loader if we have a current user AND
+        // startupReady is true (all restoration complete).
+        if (currentUser && startupReady) {
           clearInterval(interval);
           hideFullPageLoader();
-          console.log('[Loader] Hidden: Firebase balances loaded for user', currentUser.uid);
+          console.log('[Loader] Hidden: startupReady is true for user', currentUser.uid);
           return;
         }
-        // Safety fallback: if Firebase never responds (e.g., network issue),
+        // Safety fallback: if startup never becomes ready (e.g., an
+        // unexpected network issue that leaves a critical step pending),
         // do not leave the user staring at a spinner forever. After 30s,
-        // hide the loader and let the app proceed with safe defaults.
-        // The error handler in startBalanceListener() should already have
-        // set the flag in most failure cases, but this is a final guard.
+        // hide the loader and let the app proceed.
         if (checks >= maxChecks) {
           clearInterval(interval);
-          if (!balancesLoadedFromFirebase) {
-            console.warn('[Loader] Safety timeout: hiding loader without Firebase balance confirmation.');
-            balancesLoadedFromFirebase = true;
+          if (!startupReady) {
+            console.warn('[Loader] Safety timeout: hiding loader without startupReady confirmation.');
+            startupReady = true;
           }
           hideFullPageLoader();
           console.log('[Loader] Hidden: safety fallback after timeout.');
@@ -13185,12 +12514,8 @@
         }
       } else {
         console.log('[Bot Restore] No running state found.');
-        // BOT TRADE LIFECYCLE FIX START
-        // Even if the bot is not running, restore any persisted active bot trade
-        // and ensure the expiry monitor is alive to settle it.
         restorePersistedActiveBotTrade();
         ensureBotExpiryMonitorRunning();
-        // BOT TRADE LIFECYCLE FIX END
       }
     }, 1000);
 
@@ -13203,10 +12528,6 @@
     // ============================================================
     // REFERRAL COUNT FIX START - Core functions
     // ============================================================
-    /**
-     * Loads the referral count for the currently authenticated user.
-     * Counts users where referredBy === currentUser's referralCode.
-     */
     async function loadReferralCount() {
       if (!currentUser) {
         console.warn('[Referral Count] No authenticated user.');
@@ -13214,7 +12535,6 @@
       }
 
       try {
-        // Get current user's referral code
         const userSnapshot = await get(child(ref(db), `users/${currentUser.uid}`));
         if (!userSnapshot.exists()) {
           console.warn('[Referral Count] User data not found for:', currentUser.uid);
@@ -13226,31 +12546,26 @@
 
         if (!referralCode) {
           console.warn('[Referral Count] No referralCode found for user:', currentUser.uid);
-          // Display 0 and keep existing listener
           const countEl = document.getElementById('totalReferralsCount');
           if (countEl) countEl.textContent = '0';
           return;
         }
 
-        // Query all users and count those with matching referredBy
         const allUsersSnapshot = await get(child(ref(db), 'users'));
         let count = 0;
 
         if (allUsersSnapshot.exists()) {
           const allUsers = allUsersSnapshot.val();
           for (const uid in allUsers) {
-            // Skip the current user
             if (uid === currentUser.uid) continue;
 
             const user = allUsers[uid];
-            // Count only if referredBy matches this user's referralCode
             if (user.referredBy && user.referredBy === referralCode) {
               count++;
             }
           }
         }
 
-        // Update the UI
         const countEl = document.getElementById('totalReferralsCount');
         if (countEl) {
           countEl.textContent = String(count);
@@ -13263,10 +12578,6 @@
       }
     }
 
-    /**
-     * Sets up a real-time listener on the users node to keep referral count updated.
-     * Uses the current user's referralCode from Firebase.
-     */
     function setupReferralListener(currentUserReferralCode) {
       if (!currentUser) {
         console.warn('[Referral Count] Cannot setup listener: no authenticated user.');
@@ -13278,7 +12589,6 @@
         return;
       }
 
-      // Remove any existing listener to avoid duplicates
       if (window._referralListenerRef) {
         off(window._referralListenerRef);
         window._referralListenerRef = null;
@@ -13340,10 +12650,8 @@
     // ============================================================
     // FINAL COMMUNITY AND CHART LINKS FIX START
     // ============================================================
-    // Fix for "Join Our Community" - opens https://t.me/goldlinemarkets
     const joinCommunityBtn = document.getElementById('joinCommunityBtn');
     if (joinCommunityBtn) {
-      // Remove any existing click listeners to avoid duplication
       joinCommunityBtn.removeEventListener('click', joinCommunityBtn._clickHandler);
       joinCommunityBtn._clickHandler = function(e) {
         e.stopPropagation();
@@ -13356,15 +12664,11 @@
     // ============================================================
     // ABOUT US NAVIGATION REMOVAL START
     // ============================================================
-    // About Us - Navigation removed (does nothing)
     const aboutUsBtn = document.getElementById('aboutUsBtn');
     if (aboutUsBtn) {
-      // Remove any existing click listeners
       aboutUsBtn.removeEventListener('click', aboutUsBtn._clickHandler);
-      // Replace with empty handler that does nothing
       aboutUsBtn._clickHandler = function(e) {
         e.stopPropagation();
-        // Intentionally empty - no navigation
         console.log('[About Us] Clicked - no navigation');
       };
       aboutUsBtn.addEventListener('click', aboutUsBtn._clickHandler);
@@ -13377,11 +12681,7 @@
     // ============================================================
     // DYNAMIC LIMITS - Ensure initial load uses Firebase values
     // ============================================================
-    // If we are already logged in, the listeners above will handle it.
-    // But we also need to ensure that the initial UI reflects the Firebase values.
-    // The listeners fire immediately on connection, but we also set a fallback.
     setTimeout(() => {
-      // Ensure minimum values are set from Firebase or fallback to 5
       if (window.minimumDeposit === undefined || window.minimumDeposit === null) {
         window.minimumDeposit = 5;
         console.log('[Dynamic Limits] Fallback deposit min = 5');
@@ -13406,7 +12706,7 @@
         window.currentMaxStake = 1000;
         console.log('[Dynamic Limits] Fallback stake max = 1000');
       }
-      // Update UI      updateDepositMinUI(window.minimumDeposit);
+      updateDepositMinUI(window.minimumDeposit);
       updateWithdrawalMinUI(window.minimumWithdrawal);
       updateWithdrawalMinFooterUI(window.minimumWithdrawal);
       updateUsdtDepositMaxUI(window.maximumDeposit);
@@ -13416,8 +12716,6 @@
 
     // ============================================================
     // SUPPORT CHAT - User ↔ Admin two-way real-time chat
-    // Isolated Firebase path: support/{uid}/messages
-    // Admin legacy mirror:    received/1970783136/{uid}/...
     // ============================================================
     function formatSupportTime(ts) {
       try {
@@ -13435,7 +12733,6 @@
         container.innerHTML = `<div class="support-chat-loading">No messages yet. Start the conversation.</div>`;
         return;
       }
-      // Sort ascending by timestamp
       const sorted = messageList.slice().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       let html = '';
       sorted.forEach(msg => {
@@ -13464,7 +12761,6 @@
 
     function startSupportChatListener(uid) {
       if (!uid) return;
-      // If already listening to the same uid, don't recreate
       if (supportCurrentUid === uid && supportChatListenerRef) return;
       stopSupportChatListener();
       supportCurrentUid = uid;
@@ -13481,7 +12777,6 @@
             list.push({ id: key, ...item });
           }
         });
-        // Render everything each time (simple, reliable, no duplicates since we replace the DOM)
         renderSupportMessages(list);
       }, (error) => {
         console.error('[Support] listener error:', error);
@@ -13497,7 +12792,6 @@
         showToast('Please log in to use support chat');
         return;
       }
-      // Open the Support Chat panel
       if (panels.supportChat) {
         closeAllPanels();
         panels.supportChat.classList.remove('hidden');
@@ -13506,9 +12800,7 @@
         currentPanelStack.push('supportChat');
         savePanelState('supportChat', currentPanelStack.slice());
       }
-      // Start listener
       startSupportChatListener(currentUser.uid);
-      // Focus the input
       const input = document.getElementById('supportChatInput');
       if (input) input.focus();
     }
@@ -13531,8 +12823,6 @@
           senderEmail: (currentUserData && currentUserData.email) || currentUser.email || '',
           timestamp: Date.now()
         });
-        // Also mirror to the legacy admin path so the existing Admin Support panel
-        // (which watches received/{conversationId}/{userId}) continues to work.
         try {
           const legacyRef = ref(db, `${SUPPORT_ADMIN_LEGACY_PARENT}/${SUPPORT_ADMIN_LEGACY_CONVERSATION}/${currentUser.uid}`);
           await update(legacyRef, {
@@ -13554,9 +12844,6 @@
       }
     }
 
-    // Also listen to the legacy reply field so admin replies coming via the
-    // existing Admin Support panel (which writes to received/.../{uid}/reply)
-    // are automatically delivered into the new per-uid message thread.
     let supportLegacyReplyListenerRef = null;
     let supportLegacyReplyListener = null;
     function startSupportLegacyReplyListener(uid) {
@@ -13574,7 +12861,6 @@
         if (!trimmed) return;
         if (trimmed === lastSeenReply) return;
         lastSeenReply = trimmed;
-        // Push into the per-uid message thread so it renders with the correct alignment.
         try {
           const msgRef = ref(db, `support/${uid}/messages`);
           await push(msgRef, {
@@ -13593,14 +12879,12 @@
       });
     }
 
-    // Attach the Support Chat UI event handlers (isolated, minimal)
     (function attachSupportChatUI() {
       const openBtn = document.getElementById('chatWithSupportBtn');
       if (openBtn) {
         openBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           openSupportChat();
-          // Ensure the legacy listener is also active for admin replies
           if (currentUser) startSupportLegacyReplyListener(currentUser.uid);
         });
       }
@@ -13640,8 +12924,6 @@
       }
     })();
 
-    // Start support listeners when the user logs in (hook into existing flow).
-    // We use a small interval-free approach: check when currentUser becomes available.
     let supportLoginHookAttached = false;
     function attachSupportOnLogin() {
       if (supportLoginHookAttached) return;
@@ -13650,7 +12932,6 @@
         startSupportLegacyReplyListener(currentUser.uid);
       }
     }
-    // Poll briefly (max 30s) until auth resolves, then attach. Polling is cheap and only runs during login.
     (function supportLoginPoll() {
       let tries = 0;
       const t = setInterval(() => {
@@ -13666,11 +12947,9 @@
 
     console.log('[Support] Two-way support chat initialized. Path: support/{uid}/messages');
     console.log('[Support] Legacy mirror active at received/1970783136/{uid} for Admin Support compatibility.');
-    // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION START - Log the fix
     console.log('[Crypto Deposit] Duplicate submission protection enabled.');
     console.log('[Crypto Deposit] ONE USER ACTION = ONE CRYPTO DEPOSIT TRANSACTION RECORD.');
     console.log('[Crypto Deposit] Submission-in-progress lock + pending deposit check active.');
-    // CRYPTO DEPOSIT DUPLICATE SUBMISSION PROTECTION END
 
   </script>
 </body>
