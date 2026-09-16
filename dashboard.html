@@ -6938,6 +6938,9 @@
         if (!tradingViewWidget) return;
         const chart = tradingViewWidget.activeChart();
         if (!chart) return;
+        // The supported way to remove a study is via chart.removeStudy().
+        // We retrieve all studies and remove any whose name contains "volume".
+        // This is called both on load and after widget recreation.
         const studies = chart.getAllStudies();
         studies.forEach(study => {
           if (study.name && study.name.toLowerCase().includes('volume')) {
@@ -6945,6 +6948,7 @@
             console.log('[TradingView] Volume pane removed:', study.name);
           }
         });
+        // Fallback for older widget builds that expose removeVolume()
         if (typeof chart.removeVolume === 'function') {
           chart.removeVolume();
           console.log('[TradingView] Volume removed via chart.removeVolume()');
@@ -12236,10 +12240,10 @@
             }
           }, 1000);
         } else {
-          console.log('[BOT] Bot is stopped. No new trade will be opened.');
+          console.log('[Bot] Bot is stopped. No new trade will be opened.');
         }
       } catch (error) {
-        console.error('[BOT] Error closing trade:', error);
+        console.error('[Bot] Error closing trade:', error);
       } finally {
         botClosingTrade = false;
       }
