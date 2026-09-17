@@ -6988,7 +6988,10 @@
         hide_side_toolbar: false,
         allow_symbol_change: false,
         container_id: "tradingview_widget",
-        studies: []
+        studies: [],
+        disabled_features: [
+          "create_volume_indicator_by_default"
+        ]
       });
 
       console.log(`[TradingView] Widget initialized with symbol: ${initialSymbol}, theme: ${currentTheme}, toolbar_bg: ${toolbarBg}`);
@@ -8000,7 +8003,10 @@
             hide_side_toolbar: false,
             allow_symbol_change: false,
             container_id: "tradingview_widget",
-            studies: []
+            studies: [],
+            disabled_features: [
+              "create_volume_indicator_by_default"
+            ]
           });
           let attempts = 0;
           const checkChart = setInterval(() => {
@@ -12954,5 +12960,3 @@
   </script>
 </body>
 </html>
-
-  
