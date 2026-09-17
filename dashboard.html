@@ -11253,9 +11253,9 @@
                     <span class="label">Price:</span>
                     <span class="value">${price}</span>
                     <span class="label">Stake:</span>
-                    <span class="value">$${amount.toFixed(2)}</span>
+                    <span class="value"><input type="text" id="previewStakeInput" value="$${amount.toFixed(2)}" style="background:var(--bg-input);border:1px solid var(--border-light);border-radius:6px;padding:2px 6px;color:var(--text-white);font-size:13px;font-weight:600;width:80px;text-align:right;outline:none;"></span>
                     <span class="label">Duration:</span>
-                    <span class="value">${durationText}</span>
+                    <span class="value"><input type="text" id="previewDurationInput" value="${durationText}" style="background:var(--bg-input);border:1px solid var(--border-light);border-radius:6px;padding:2px 6px;color:var(--text-white);font-size:13px;font-weight:600;width:80px;text-align:right;outline:none;"></span>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:12px; justify-content:center;">
                     <button class="btn-confirm" style="background:${sideColor};">Confirm</button>
@@ -11266,8 +11266,12 @@
 
       notif.querySelector('.btn-confirm').addEventListener('click', function(e) {
         e.stopPropagation();
+        const stakeInput = notif.querySelector('#previewStakeInput');
+        const durationInput = notif.querySelector('#previewDurationInput');
+        const stakeVal = parseFloat(stakeInput.value.replace(/[^0-9.]/g, '')) || amount;
+        const durationVal = durationInput.value.trim() || durationText;
         if (notif.parentNode) notif.remove();
-        executeManualTrade(side);
+        executeManualTrade(side, stakeVal, durationVal);
       });
 
       notif.querySelector('.btn-cancel').addEventListener('click', function(e) {
@@ -11283,7 +11287,7 @@
             if (notif.parentNode) notif.remove();
           }, 500);
         }
-      }, 10000);
+      }, 15000);
     }
 
     const desktopSellBtn = document.querySelector('.btn-sell-lg');
@@ -11308,8 +11312,8 @@
         showOrderPreview('BUY'); });
     }
 
-    async function executeManualTrade(side) {
-      console.log('Executing manual trade:', side);
+    async function executeManualTrade(side, overrideStake, overrideDuration) {
+      console.log('Executing manual trade:', side, 'stake:', overrideStake, 'duration:', overrideDuration);
 
       const fbRate = getCurrentWinRateFromFirebase();
       if (fbRate === null || typeof fbRate !== 'number') {
@@ -11341,8 +11345,14 @@
         return;
       }
 
-      const amountText = document.getElementById('tradeAmount').value;
-      const amount = parseFloat(amountText.replace('$', '').trim()) || 5;
+      let amount;
+      if (overrideStake !== undefined && overrideStake !== null && !isNaN(overrideStake)) {
+        amount = overrideStake;
+      } else {
+        const amountText = document.getElementById('tradeAmount').value;
+        amount = parseFloat(amountText.replace('$', '').trim()) || 5;
+      }
+
       const currentBalance = getCurrentBalance();
       if (currentBalance < amount) {
         const notif = document.createElement('div');
@@ -11364,11 +11374,26 @@
         }, 3000);
         return;
       }
-      const durationText = document.getElementById('tradeDuration').textContent;
+
       let durationInMinutes = 1;
-      if (durationText.includes('s')) { const seconds = parseInt(durationText.replace('s', '').trim());
-        durationInMinutes = seconds / 60; } else { durationInMinutes = parseInt(durationText.replace('min', '')
-          .trim()) || 1; }
+      if (overrideDuration !== undefined && overrideDuration !== null && overrideDuration !== '') {
+        const dStr = String(overrideDuration).toLowerCase().trim();
+        if (dStr.includes('s')) {
+          const seconds = parseInt(dStr.replace('s', '').trim());
+          durationInMinutes = seconds / 60;
+        } else if (dStr.includes('min')) {
+          durationInMinutes = parseInt(dStr.replace('min', '').trim()) || 1;
+        } else {
+          const num = parseFloat(dStr);
+          if (!isNaN(num)) durationInMinutes = num;
+        }
+      } else {
+        const durationText = document.getElementById('tradeDuration').textContent;
+        if (durationText.includes('s')) { const seconds = parseInt(durationText.replace('s', '').trim());
+          durationInMinutes = seconds / 60; } else { durationInMinutes = parseInt(durationText.replace('min', '')
+            .trim()) || 1; }
+      }
+
       let priceElement = null;
       if (side === 'SELL') priceElement = document.querySelector('.btn-sell-lg .live-sell-price') || document
         .querySelector('.mobile-btn-sell .live-sell-price');
