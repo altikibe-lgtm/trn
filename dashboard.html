@@ -12636,6 +12636,199 @@
     console.log('[Manual Persist] Persistence guard prevents startup defaults from overwriting saved values.');
     console.log('[Manual Persist] Immediate typing persistence added via input event on #tradeAmount.');
 
+    // =============================================
+    // MARKET TERMINAL BOUNDARY + DOUBLE-BACK EXIT
+    // =============================================
+    // Market is the ROOT_PANEL and must act as the navigation boundary.
+    // When Market is active, stale history behind it must not be reachable.
+    // A single sentinel history entry is pushed when Market becomes active,
+    // so the browser always has somewhere to go without navigating away
+    // from the dashboard.
+    //
+    // When the user presses Back while on Market:
+    //   - First Back: stay on Market, show "Press back again to exit".
+    //   - Second Back within 2 seconds: allow the browser to leave.
+    //   - Otherwise: reset the double-back state.
+    // =============================================
+
+    const MARKET_SENTINEL_STATE = '__market_sentinel__';
+    let marketBoundaryArmed = false;
+    let exitConfirmTimer = null;
+    let exitConfirmationVisible = false;
+
+    function isOnMarket() {
+      return currentPanelStack.length === 0;
+    }
+
+    function showExitConfirmationToast() {
+      if (exitConfirmationVisible) return;
+      exitConfirmationVisible = true;
+
+      const notif = document.createElement('div');
+      notif.className = 'trade-notification';
+      notif.style.borderColor = 'var(--warning)';
+      notif.style.zIndex = '10001';
+      notif.innerHTML = `
+        <div style="font-weight: 600;">Press back again to exit</div>
+      `;
+      notif.id = 'exitConfirmToast';
+      document.body.appendChild(notif);
+
+      setTimeout(() => {
+        if (notif.parentNode) {
+          notif.style.opacity = '0';
+          notif.style.transition = 'opacity 0.4s ease';
+          setTimeout(() => {
+            if (notif.parentNode) notif.remove();
+            exitConfirmationVisible = false;
+          }, 400);
+        } else {
+          exitConfirmationVisible = false;
+        }
+      }, 2000);
+    }
+
+    function armMarketBoundary() {
+      if (!isOnMarket()) return;
+      if (marketBoundaryArmed) return;
+      // Push a sentinel state so that the next Back press lands on the
+      // sentinel rather than stale history behind Market. Use a unique
+      // identifier to distinguish it from normal Market states.
+      try {
+        history.pushState(
+          { panel: ROOT_PANEL, stack: [], __marketSentinel: true },
+          '',
+          window.location.href
+        );
+        marketBoundaryArmed = true;
+        console.log('[Market Boundary] Sentinel history entry pushed. Market is now terminal.');
+      } catch (e) {
+        console.warn('[Market Boundary] Could not push sentinel state:', e);
+      }
+    }
+
+    function disarmMarketBoundary() {
+      marketBoundaryArmed = false;
+    }
+
+    // Re-arm the boundary whenever Market becomes active (via closeAllPanels
+    // or explicit Market button). This must be called AFTER any history
+    // push/replace to ensure the sentinel is the most recent entry.
+    function ensureMarketBoundary() {
+      if (isOnMarket()) {
+        armMarketBoundary();
+      }
+    }
+
+    // ---- Extend the existing popstate handler with terminal logic ----
+    // We add a second listener rather than modifying the existing one to
+    // keep the original navigation architecture intact. The two listeners
+    // cooperate: the original handles panel state restoration, and this
+    // one handles the Market terminal boundary and double-back exit.
+    window.addEventListener('popstate', function(event) {
+      const state = event.state || {};
+
+      // If we are (or were) on Market and the user pressed Back:
+      if (isOnMarket() || state.panel === ROOT_PANEL || state.panel === undefined) {
+        // Determine whether we are moving to the sentinel or away from it.
+        const isSentinel = state.__marketSentinel === true;
+
+        if (isSentinel || isOnMarket()) {
+          // We are at the Market boundary. The browser has already gone
+          // back one step. We need to decide: allow exit (second back) or
+          // stay on Market (first back).
+
+          if (exitConfirmTimer) {
+            // Second Back within the window → allow the browser to leave.
+            clearTimeout(exitConfirmTimer);
+            exitConfirmTimer = null;
+            exitConfirmationVisible = false;
+            console.log('[Market Boundary] Second back detected. Allowing exit.');
+            // Do not push any state; let the browser navigate naturally.
+            // The sentinel entry has already been consumed.
+            marketBoundaryArmed = false;
+            return;
+          }
+
+          // First Back → stay on Market and show confirmation.
+          // Re-push the sentinel so the browser has a stable place to be.
+          showExitConfirmationToast();
+
+          // Re-arm the sentinel so the user is still on Market.
+          try {
+            history.pushState(
+              { panel: ROOT_PANEL, stack: [], __marketSentinel: true },
+              '',
+              window.location.href
+            );
+            marketBoundaryArmed = true;
+          } catch (e) {
+            console.warn('[Market Boundary] Could not re-push sentinel:', e);
+          }
+
+          // Ensure the UI reflects Market state.
+          closeAllPanels();
+          if (buttons.market) buttons.market.classList.add('active');
+          if (chartOverlay) chartOverlay.classList.remove('active');
+          currentPanelStack = [];
+          savePanelState(ROOT_PANEL, []);
+
+          // Start the timeout window for the second back.
+          if (exitConfirmTimer) clearTimeout(exitConfirmTimer);
+          exitConfirmTimer = setTimeout(() => {
+            exitConfirmTimer = null;
+            exitConfirmationVisible = false;
+            console.log('[Market Boundary] Double-back window expired. Reset.');
+          }, 2000);
+
+          return;
+        }
+      }
+
+      // Any popstate that leaves Market disarms the boundary so panels
+      // retain their normal back behavior.
+      disarmMarketBoundary();
+    });
+
+    // ---- Hook Market activation to arm the boundary ----
+    // Wrap the existing Market button click and closeAllPanels usage
+    // so the sentinel is always the most recent history entry when Market
+    // becomes active.
+    const originalCloseAllPanels = closeAllPanels;
+    closeAllPanels = function() {
+      originalCloseAllPanels();
+      // After closing all panels we are on Market; arm the boundary.
+      // Use a microtask so any history.replaceState in the caller runs first.
+      setTimeout(ensureMarketBoundary, 0);
+    };
+
+    // Re-arm after the Market nav button handler runs (it pushes a Market
+    // state). The existing handler already pushes a state, so we only need
+    // to ensure the sentinel follows it.
+    if (buttons.market) {
+      const marketBtn = buttons.market;
+      marketBtn.addEventListener('click', function() {
+        setTimeout(ensureMarketBoundary, 0);
+      });
+    }
+
+    // Re-arm when the user explicitly navigates to Market via back from a
+    // panel: the popstate handler above already calls closeAllPanels, which
+    // triggers ensureMarketBoundary via the wrapped function.
+
+    // Ensure the boundary is armed on initial load if we start on Market.
+    // This runs after the existing init code has settled.
+    setTimeout(() => {
+      if (isOnMarket()) {
+        armMarketBoundary();
+        console.log('[Market Boundary] Initial Market boundary armed.');
+      }
+    }, 1500);
+
+    // =============================================
+    // END MARKET TERMINAL BOUNDARY PATCH
+    // =============================================
+
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
     }
