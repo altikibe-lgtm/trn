@@ -7190,12 +7190,6 @@
       buttons.robot.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!panels.robot.classList.contains('hidden') && currentPanelStack.length > 0 && currentPanelStack[currentPanelStack.length - 1] === 'robot') {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
           return;
         }
         if (panels.robot.classList.contains('hidden')) {
@@ -7209,12 +7203,6 @@
       buttons.deals.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!panels.deals.classList.contains('hidden') && currentPanelStack.length > 0 && currentPanelStack[currentPanelStack.length - 1] === 'deals') {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
           return;
         }
         if (panels.deals.classList.contains('hidden')) {
@@ -7228,12 +7216,6 @@
       buttons.support.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!panels.support.classList.contains('hidden') && currentPanelStack.length > 0 && currentPanelStack[currentPanelStack.length - 1] === 'support') {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
           return;
         }
         if (panels.support.classList.contains('hidden')) {
@@ -7251,12 +7233,6 @@
         if (accountBalanceDisplay) accountBalanceDisplay.textContent = `${currency} ${balance.toFixed(2)}`;
 
         if (!panels.accountLeft.classList.contains('hidden') && currentPanelStack.length > 0 && currentPanelStack[currentPanelStack.length - 1] === 'accountLeft') {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
           return;
         }
         if (panels.accountLeft.classList.contains('hidden')) {
@@ -7290,12 +7266,6 @@
           return;
         }
         if (!panels.accountSelection.classList.contains('hidden') && currentPanelStack.length > 0 && currentPanelStack[currentPanelStack.length - 1] === 'accountSelection') {
-          closeAllPanels();
-          currentPanelStack = [];
-          history.pushState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          savePanelState(ROOT_PANEL, []);
           return;
         }
         if (panels.accountSelection.classList.contains('hidden')) {
