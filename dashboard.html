@@ -7622,11 +7622,66 @@
     let currentMinStake = 5;
     let currentMaxStake = 1000;
 
+    // =============================================
+    // MANUAL TRADE PERSISTENCE – STAKE & DURATION
+    // =============================================
+    const MANUAL_STAKE_KEY = 'manualTradeStake';
+    const MANUAL_DURATION_KEY = 'manualTradeDuration';
+
+    function saveManualStake(value) {
+      try {
+        if (typeof value === 'number' && isFinite(value) && value > 0) {
+          localStorage.setItem(MANUAL_STAKE_KEY, String(value));
+          console.log('[Manual Persist] Stake saved:', value);
+        }
+      } catch (e) {
+        console.warn('[Manual Persist] Could not save stake:', e);
+      }
+    }
+
+    function saveManualDuration(value) {
+      try {
+        if (typeof value === 'number' && isFinite(value) && value >= 5) {
+          localStorage.setItem(MANUAL_DURATION_KEY, String(value));
+          console.log('[Manual Persist] Duration saved:', value);
+        }
+      } catch (e) {
+        console.warn('[Manual Persist] Could not save duration:', e);
+      }
+    }
+
+    function loadManualStake() {
+      try {
+        const stored = localStorage.getItem(MANUAL_STAKE_KEY);
+        if (stored === null) return null;
+        const num = parseFloat(stored);
+        if (!isFinite(num) || num <= 0) return null;
+        return num;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function loadManualDuration() {
+      try {
+        const stored = localStorage.getItem(MANUAL_DURATION_KEY);
+        if (stored === null) return null;
+        const num = parseFloat(stored);
+        if (!isFinite(num) || num < 5) return null;
+        return num;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // ------------------------------------------------------------
+    // MANUAL STAKE FUNCTIONS
+    // ------------------------------------------------------------
     function updateManualStakeDisplay() {
       if (currentAmount < currentMinStake) currentAmount = currentMinStake;
       if (currentAmount > currentMaxStake) currentAmount = currentMaxStake;
       tradeAmountEl.value = `$${currentAmount}`;
-      localStorage.setItem('olymmatix_manual_stake', String(currentAmount));
+      saveManualStake(currentAmount);
     }
 
     tradeAmountEl.addEventListener('blur', function() {
@@ -7659,15 +7714,33 @@
         updateManualStakeDisplay(); }
     });
 
+    // Restore manual stake from localStorage
     (function restoreManualStake() {
-      const saved = localStorage.getItem('olymmatix_manual_stake');
-      if (saved !== null) {
-        let num = parseFloat(saved);
-        if (!isNaN(num) && num >= currentMinStake && num <= currentMaxStake) {
-          currentAmount = Math.round(num);
-          updateManualStakeDisplay();
+      const savedStake = loadManualStake();
+      if (savedStake !== null) {
+        currentAmount = Math.round(savedStake);
+        if (currentAmount < currentMinStake) currentAmount = currentMinStake;
+        if (currentAmount > currentMaxStake) currentAmount = currentMaxStake;
+        tradeAmountEl.value = `$${currentAmount}`;
+        console.log('[Manual Persist] Restored stake from localStorage:', currentAmount);
+      } else {
+        // Fall back to existing localStorage key (legacy)
+        const legacy = localStorage.getItem('olymmatix_manual_stake');
+        if (legacy !== null) {
+          let num = parseFloat(legacy);
+          if (!isNaN(num) && num >= currentMinStake && num <= currentMaxStake) {
+            currentAmount = Math.round(num);
+            tradeAmountEl.value = `$${currentAmount}`;
+            saveManualStake(currentAmount);
+            console.log('[Manual Persist] Migrated legacy stake to new key:', currentAmount);
+          } else {
+            localStorage.removeItem('olymmatix_manual_stake');
+          }
         } else {
-          localStorage.removeItem('olymmatix_manual_stake');
+          // Preserve existing default $5
+          tradeAmountEl.value = `$${currentAmount}`;
+          saveManualStake(currentAmount);
+          console.log('[Manual Persist] Using default stake:', currentAmount);
         }
       }
     })();
@@ -7690,7 +7763,7 @@
       updateBotStakeDisplay();
     }
 
-    // --- ROBOT STAKE ---
+    // --- ROBOT STAKE (unchanged) ---
     const robotAmountEl = document.getElementById('robotAmount');
     let robotCurrentAmount = 5;
 
@@ -7744,7 +7817,7 @@
       }
     })();
 
-    // --- Duration controls (unchanged) ---
+    // --- Duration controls ---
     const tradeDurationEl = document.getElementById('tradeDuration');
     let currentDuration = 5;
 
@@ -7783,7 +7856,11 @@
       return 5;
     }
 
-    function updateDurationDisplay() { tradeDurationEl.textContent = formatDuration(currentDuration); }
+    function updateDurationDisplay() {
+      tradeDurationEl.textContent = formatDuration(currentDuration);
+      saveManualDuration(currentDuration);
+    }
+
     document.getElementById('incrementDuration').addEventListener('click', (e) => {
       e.stopPropagation();
       const newDuration = getNextDuration(currentDuration);
@@ -7796,7 +7873,23 @@
       if (newDuration >= 5) { currentDuration = newDuration;
         updateDurationDisplay(); }
     });
-    updateDurationDisplay();
+
+    // Restore manual duration from localStorage
+    (function restoreManualDuration() {
+      const savedDuration = loadManualDuration();
+      if (savedDuration !== null) {
+        currentDuration = Math.round(savedDuration);
+        if (currentDuration < 5) currentDuration = 5;
+        if (currentDuration > 3600) currentDuration = 3600;
+        tradeDurationEl.textContent = formatDuration(currentDuration);
+        console.log('[Manual Persist] Restored duration from localStorage:', currentDuration);
+      } else {
+        // Preserve existing default 5s
+        tradeDurationEl.textContent = formatDuration(currentDuration);
+        saveManualDuration(currentDuration);
+        console.log('[Manual Persist] Using default duration:', currentDuration);
+      }
+    })();
 
     // --- Robot Duration (unchanged) ---
     const robotDurationEl = document.getElementById('robotDuration');
@@ -11219,6 +11312,7 @@
         return;
       }
 
+      // Load current values from the UI (which reflect the saved manual stake and duration)
       const amountText = document.getElementById('tradeAmount').value;
       const amount = parseFloat(amountText.replace('$', '').trim()) || 5;
       const durationText = document.getElementById('tradeDuration').textContent;
@@ -11264,12 +11358,60 @@
             `;
       document.body.appendChild(notif);
 
+      // Make preview inputs save to localStorage on change
+      const previewStakeInput = notif.querySelector('#previewStakeInput');
+      const previewDurationInput = notif.querySelector('#previewDurationInput');
+
+      previewStakeInput.addEventListener('change', function() {
+        const val = parseFloat(this.value.replace(/[^0-9.]/g, ''));
+        if (!isNaN(val) && val > 0) {
+          saveManualStake(val);
+          console.log('[Manual Persist] Stake updated from preview:', val);
+        }
+      });
+
+      previewDurationInput.addEventListener('change', function() {
+        const raw = this.value.trim().toLowerCase();
+        let seconds = null;
+        if (raw.endsWith('s')) {
+          seconds = parseInt(raw.replace('s', '').trim());
+        } else if (raw.includes('min')) {
+          const mins = parseInt(raw.replace('min', '').trim());
+          if (!isNaN(mins)) seconds = mins * 60;
+        } else {
+          const num = parseFloat(raw);
+          if (!isNaN(num)) seconds = num;
+        }
+        if (seconds !== null && seconds >= 5) {
+          saveManualDuration(seconds);
+          console.log('[Manual Persist] Duration updated from preview:', seconds);
+        }
+      });
+
       notif.querySelector('.btn-confirm').addEventListener('click', function(e) {
         e.stopPropagation();
         const stakeInput = notif.querySelector('#previewStakeInput');
         const durationInput = notif.querySelector('#previewDurationInput');
         const stakeVal = parseFloat(stakeInput.value.replace(/[^0-9.]/g, '')) || amount;
         const durationVal = durationInput.value.trim() || durationText;
+
+        // Persist edited values
+        saveManualStake(stakeVal);
+        let durationSeconds = null;
+        const raw = durationVal.toLowerCase();
+        if (raw.endsWith('s')) {
+          durationSeconds = parseInt(raw.replace('s', '').trim());
+        } else if (raw.includes('min')) {
+          const mins = parseInt(raw.replace('min', '').trim());
+          if (!isNaN(mins)) durationSeconds = mins * 60;
+        } else {
+          const num = parseFloat(raw);
+          if (!isNaN(num)) durationSeconds = num;
+        }
+        if (durationSeconds !== null && durationSeconds >= 5) {
+          saveManualDuration(durationSeconds);
+        }
+
         if (notif.parentNode) notif.remove();
         executeManualTrade(side, stakeVal, durationVal);
       });
@@ -12473,6 +12615,10 @@
     console.log('[Startup Sync] The existing full-page loader now remains visible until ALL startup restoration is complete.');
     console.log('[Startup Sync] startupReady flag gates hideFullPageLoader().');
     console.log('[Startup Sync] No intermediate account state (Demo/null) is exposed before the saved account is resolved.');
+    // MANUAL PERSISTENCE PATCH - Log
+    console.log('[Manual Persist] Manual stake and duration are persisted to localStorage under keys "manualTradeStake" and "manualTradeDuration".');
+    console.log('[Manual Persist] Values are restored on page load and updated when changed in the main controls or the order preview.');
+    console.log('[Manual Persist] Confirmed trades use the exact currently displayed values.');
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
@@ -12981,144 +13127,6 @@
     console.log('[Crypto Deposit] Duplicate submission protection enabled.');
     console.log('[Crypto Deposit] ONE USER ACTION = ONE CRYPTO DEPOSIT TRANSACTION RECORD.');
     console.log('[Crypto Deposit] Submission-in-progress lock + pending deposit check active.');
-
-    // ============================================================
-    // MANUAL TRADE LOCALSTORAGE PERSISTENCE
-    // ============================================================
-    const MANUAL_TRADE_STAKE_KEY = 'manualTradeStake';
-    const MANUAL_TRADE_DURATION_KEY = 'manualTradeDuration';
-
-    function saveManualStakeToLocalStorage(amount) {
-      try {
-        const val = Number(amount);
-        if (!isNaN(val) && val > 0) {
-          localStorage.setItem(MANUAL_TRADE_STAKE_KEY, String(val));
-          console.log('[Manual Persist] Saved stake:', val);
-        }
-      } catch (e) {
-        console.warn('[Manual Persist] Could not save stake:', e);
-      }
-    }
-
-    function saveManualDurationToLocalStorage(durationSeconds) {
-      try {
-        const val = Number(durationSeconds);
-        if (!isNaN(val) && val > 0) {
-          localStorage.setItem(MANUAL_TRADE_DURATION_KEY, String(val));
-          console.log('[Manual Persist] Saved duration (seconds):', val);
-        }
-      } catch (e) {
-        console.warn('[Manual Persist] Could not save duration:', e);
-      }
-    }
-
-    function loadManualStakeFromLocalStorage() {
-      try {
-        const raw = localStorage.getItem(MANUAL_TRADE_STAKE_KEY);
-        if (raw === null) return null;
-        const val = Number(raw);
-        if (isNaN(val) || val <= 0) {
-          localStorage.removeItem(MANUAL_TRADE_STAKE_KEY);
-          return null;
-        }
-        return Math.round(val);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function loadManualDurationFromLocalStorage() {
-      try {
-        const raw = localStorage.getItem(MANUAL_TRADE_DURATION_KEY);
-        if (raw === null) return null;
-        const val = Number(raw);
-        if (isNaN(val) || val <= 0) {
-          localStorage.removeItem(MANUAL_TRADE_DURATION_KEY);
-          return null;
-        }
-        return val;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    (function restoreManualTradeSettings() {
-      const savedStake = loadManualStakeFromLocalStorage();
-      if (savedStake !== null && savedStake >= currentMinStake && savedStake <= currentMaxStake) {
-        currentAmount = savedStake;
-        tradeAmountEl.value = `$${currentAmount}`;
-        console.log('[Manual Persist] Restored stake on load:', currentAmount);
-      }
-
-      const savedDuration = loadManualDurationFromLocalStorage();
-      if (savedDuration !== null && savedDuration >= 5 && savedDuration <= 3600) {
-        currentDuration = savedDuration;
-        updateDurationDisplay();
-        console.log('[Manual Persist] Restored duration on load:', currentDuration, 'seconds');
-      }
-    })();
-
-    // Hook into existing manual stake/duration update functions to save to localStorage
-    const originalUpdateManualStakeDisplay = updateManualStakeDisplay;
-    updateManualStakeDisplay = function() {
-      originalUpdateManualStakeDisplay();
-      saveManualStakeToLocalStorage(currentAmount);
-    };
-
-    const originalUpdateDurationDisplay = updateDurationDisplay;
-    updateDurationDisplay = function() {
-      originalUpdateDurationDisplay();
-      saveManualDurationToLocalStorage(currentDuration);
-    };
-
-    // Also save when user edits stake via blur
-    tradeAmountEl.addEventListener('blur', function() {
-      saveManualStakeToLocalStorage(currentAmount);
-    });
-
-    // Override showOrderPreview to use localStorage values and save edits
-    const originalShowOrderPreview = showOrderPreview;
-    showOrderPreview = function(side) {
-      // Ensure preview uses latest localStorage values if available
-      const savedStake = loadManualStakeFromLocalStorage();
-      if (savedStake !== null && savedStake >= currentMinStake && savedStake <= currentMaxStake) {
-        currentAmount = savedStake;
-        tradeAmountEl.value = `$${currentAmount}`;
-      }
-      const savedDuration = loadManualDurationFromLocalStorage();
-      if (savedDuration !== null && savedDuration >= 5 && savedDuration <= 3600) {
-        currentDuration = savedDuration;
-        updateDurationDisplay();
-      }
-      originalShowOrderPreview(side);
-    };
-
-    // Modify the confirm button inside showOrderPreview to save edited values
-    const originalExecuteManualTrade = executeManualTrade;
-    executeManualTrade = function(side, overrideStake, overrideDuration) {
-      if (overrideStake !== undefined && overrideStake !== null && !isNaN(overrideStake)) {
-        saveManualStakeToLocalStorage(overrideStake);
-      }
-      if (overrideDuration !== undefined && overrideDuration !== null && overrideDuration !== '') {
-        const dStr = String(overrideDuration).toLowerCase().trim();
-        let seconds = 0;
-        if (dStr.includes('s')) {
-          seconds = parseInt(dStr.replace('s', '').trim());
-        } else if (dStr.includes('min')) {
-          seconds = (parseInt(dStr.replace('min', '').trim()) || 1) * 60;
-        } else {
-          const num = parseFloat(dStr);
-          if (!isNaN(num)) seconds = Math.round(num * 60);
-        }
-        if (!isNaN(seconds) && seconds > 0) {
-          saveManualDurationToLocalStorage(seconds);
-        }
-      }
-      originalExecuteManualTrade(side, overrideStake, overrideDuration);
-    };
-
-    console.log('[Manual Persist] Manual trade stake/duration localStorage persistence enabled.');
-    console.log('[Manual Persist] Keys: manualTradeStake, manualTradeDuration');
 
   </script>
 </body>
