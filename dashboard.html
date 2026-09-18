@@ -5952,25 +5952,6 @@
     });
 
     // =============================================
-    // AUTHENTICATED NAVIGATION BOUNDARY
-    // =============================================
-    // Returns true if the given URL would navigate to the login page.
-    function isNavigatingToLoginPage(url) {
-      if (!url || typeof url !== 'string') return false;
-      try {
-        const lower = url.toLowerCase();
-        if (lower.includes('index.html')) return true;
-        const parsed = new URL(url, window.location.href);
-        const path = (parsed.pathname || '').toLowerCase();
-        const base = path.substring(path.lastIndexOf('/') + 1);
-        if (base === '' || base === 'index.html') return true;
-        return false;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    // =============================================
     // AUTHENTICATION
     // =============================================
     onAuthStateChanged(auth, async (user) => {
@@ -7134,46 +7115,6 @@
     // GLOBAL POPSTATE HANDLER
     // =============================================
     window.addEventListener('popstate', function(event) {
-      // ============================================================
-      // AUTHENTICATED NAVIGATION BOUNDARY
-      // ============================================================
-      // If the user is authenticated AND this popstate would take
-      // them to the login page, block that navigation and keep them
-      // on the dashboard root (Market). This covers desktop Back,
-      // Android system Back, Android Back gesture, iOS Back gesture,
-      // and mobile browser Back navigation because they all surface
-      // as popstate events.
-      //
-      // The check is based on:
-      //   1. currentUser being truthy (authenticated).
-      //   2. The destination URL resolving to the login page.
-      //
-      // If either condition is not met, the normal dashboard history
-      // behavior runs unchanged.
-      // ============================================================
-      if (currentUser) {
-        const destination = (event.state && event.state.panel) ? event.state.panel : null;
-        const navigatingToLogin = isNavigatingToLoginPage(window.location.href) ||
-                                  (destination === null && isNavigatingToLoginPage(document.referrer));
-        if (navigatingToLogin) {
-          console.log('[Auth Boundary] Blocked navigation to login page while authenticated. Loading Market.');
-          // Replace history entry so the user stays on the dashboard.
-          try {
-            history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
-          } catch (e) {}
-          // Load/refresh the Market panel.
-          closeAllPanels();
-          if (buttons.market) buttons.market.classList.add('active');
-          if (chartOverlay) chartOverlay.classList.remove('active');
-          currentPanelStack = [];
-          savePanelState(ROOT_PANEL, []);
-          return;
-        }
-      }
-      // ============================================================
-      // END AUTHENTICATED NAVIGATION BOUNDARY
-      // ============================================================
-
       const state = event.state || { panel: ROOT_PANEL, stack: [] };
 
       if (state.stack && Array.isArray(state.stack)) {
@@ -12694,8 +12635,6 @@
     // MANUAL PERSISTENCE GUARD LOG
     console.log('[Manual Persist] Persistence guard prevents startup defaults from overwriting saved values.');
     console.log('[Manual Persist] Immediate typing persistence added via input event on #tradeAmount.');
-    // AUTH BOUNDARY LOG
-    console.log('[Auth Boundary] Authenticated navigation boundary active. Back to login page is blocked while authenticated.');
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
