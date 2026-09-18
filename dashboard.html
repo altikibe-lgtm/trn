@@ -7628,7 +7628,20 @@
     const MANUAL_STAKE_KEY = 'manualTradeStake';
     const MANUAL_DURATION_KEY = 'manualTradeDuration';
 
+    // --- PERSISTENCE GUARD START ---
+    // This flag prevents any startup-time default values from being written
+    // to localStorage BEFORE the restore IIFEs have completed. Only after
+    // the restore phase completes may the manual persistence functions
+    // write to localStorage.
+    let manualPersistenceReady = false;
+    // --- PERSISTENCE GUARD END ---
+
     function saveManualStake(value) {
+      // PERSISTENCE GUARD: Skip if restore phase has not completed.
+      if (!manualPersistenceReady) {
+        console.log('[Manual Persist] saveManualStake skipped (restore not ready):', value);
+        return;
+      }
       try {
         if (typeof value === 'number' && isFinite(value) && value > 0) {
           localStorage.setItem(MANUAL_STAKE_KEY, String(value));
@@ -7640,6 +7653,11 @@
     }
 
     function saveManualDuration(value) {
+      // PERSISTENCE GUARD: Skip if restore phase has not completed.
+      if (!manualPersistenceReady) {
+        console.log('[Manual Persist] saveManualDuration skipped (restore not ready):', value);
+        return;
+      }
       try {
         if (typeof value === 'number' && isFinite(value) && value >= 5) {
           localStorage.setItem(MANUAL_DURATION_KEY, String(value));
@@ -7695,6 +7713,23 @@
       currentAmount = Math.round(num);
       updateManualStakeDisplay();
     });
+
+    // --- IMMEDIATE TYPING PERSISTENCE START ---
+    // Save the valid stake value on every input event while typing.
+    // This ensures direct typing/editing persists immediately without
+    // relying on blur.
+    tradeAmountEl.addEventListener('input', function() {
+      let val = this.value.replace(/[^0-9.]/g, '');
+      let num = parseFloat(val);
+      if (isNaN(num) || num <= 0) return;
+      // Respect current min/max limits.
+      if (num < currentMinStake) num = currentMinStake;
+      if (num > currentMaxStake) num = currentMaxStake;
+      currentAmount = Math.round(num);
+      // Persist immediately.
+      saveManualStake(currentAmount);
+    });
+    // --- IMMEDIATE TYPING PERSISTENCE END ---
 
     tradeAmountEl.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
@@ -7891,7 +7926,15 @@
       }
     })();
 
-    // --- Robot Duration (unchanged) ---
+    // --- PERSISTENCE GUARD RELEASE START ---
+    // After both restore IIFEs have completed, mark manual persistence as
+    // ready. From this point forward, all saveManualStake / saveManualDuration
+    // calls will write to localStorage normally.
+    manualPersistenceReady = true;
+    console.log('[Manual Persist] Persistence guard released. Manual values may now be saved.');
+    // --- PERSISTENCE GUARD RELEASE END ---
+
+    // --- ROBOT DURATION (unchanged) ---
     const robotDurationEl = document.getElementById('robotDuration');
     let robotCurrentDuration = 5;
     const ROBOT_MIN_DURATION = 2,
@@ -12619,6 +12662,9 @@
     console.log('[Manual Persist] Manual stake and duration are persisted to localStorage under keys "manualTradeStake" and "manualTradeDuration".');
     console.log('[Manual Persist] Values are restored on page load and updated when changed in the main controls or the order preview.');
     console.log('[Manual Persist] Confirmed trades use the exact currently displayed values.');
+    // MANUAL PERSISTENCE GUARD LOG
+    console.log('[Manual Persist] Persistence guard prevents startup defaults from overwriting saved values.');
+    console.log('[Manual Persist] Immediate typing persistence added via input event on #tradeAmount.');
 
     if (window.history.state === null) {
       history.replaceState({ panel: ROOT_PANEL, stack: [] }, '', window.location.href);
